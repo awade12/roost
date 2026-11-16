@@ -1,4 +1,4 @@
-use crate::event::Event;
+use crate::model::Event;
 use std::collections::VecDeque;
 
 /// Hard cap so a long offline period can't grow memory without bound.
@@ -6,11 +6,22 @@ pub const MAX_QUEUED: usize = 5000;
 
 /// In-memory event queue. Oldest events are dropped first when full.
 #[derive(Debug, Default)]
-pub struct Queue {
+pub(crate) struct Queue {
     events: VecDeque<Event>,
 }
 
 impl Queue {
+    pub fn from_vec(events: Vec<Event>) -> Self {
+        let skip = events.len().saturating_sub(MAX_QUEUED);
+        Self {
+            events: events.into_iter().skip(skip).collect(),
+        }
+    }
+
+    pub fn all(&self) -> Vec<Event> {
+        self.events.iter().cloned().collect()
+    }
+
     pub fn push(&mut self, event: Event) {
         if self.events.len() >= MAX_QUEUED {
             self.events.pop_front();
@@ -29,10 +40,12 @@ impl Queue {
         self.events.drain(..n);
     }
 
+    #[cfg(test)]
     pub fn len(&self) -> usize {
         self.events.len()
     }
 
+    #[cfg(test)]
     pub fn is_empty(&self) -> bool {
         self.events.is_empty()
     }
@@ -41,7 +54,6 @@ impl Queue {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::BTreeMap;
 
     fn ev(name: &str) -> Event {
         Event {
@@ -51,7 +63,7 @@ mod tests {
             session_id: String::new(),
             player_id: String::new(),
             value: None,
-            props: BTreeMap::new(),
+            props: Default::default(),
         }
     }
 
