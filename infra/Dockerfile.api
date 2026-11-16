@@ -1,0 +1,12 @@
+FROM node:22-alpine AS build
+RUN npm i -g pnpm@12.10.1
+WORKDIR /repo
+COPY . .
+RUN pnpm install --frozen-lockfile && pnpm --filter @roost/api build
+
+# The build bundles all dependencies into dist/index.js, so no node_modules here.
+FROM node:22-alpine
+WORKDIR /app
+COPY --from=build /repo/apps/api/dist ./dist
+USER node
+CMD ["node", "dist/index.js"]

@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  node:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: roost
+          POSTGRES_PASSWORD: roost
+          POSTGRES_DB: roost
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U roost" --health-interval 5s --health-retries 10
+      clickhouse:
+        image: clickhouse/clickhouse-server:26.8
+        env:
+          CLICKHOUSE_USER: roost
+          CLICKHOUSE_PASSWORD: roost
+          CLICKHOUSE_DB: roost
+        ports: ["8123:8123"]
+        options: --health-cmd "wget -qO- http://localhost:8123/ping" --health-interval 5s --health-retries 20
+    env:
+      DATABASE_URL: postgres://roost:roost@localhost:5432/roost
+      CLICKHOUSE_URL: http://localhost:8123
+      CLICKHOUSE_USER: roost
+      CLICKHOUSE_PASSWORD: roost
+      CLICKHOUSE_DB: roost
+      AUTH_SECRET: ci-only-secret-ci-only-secret-ci-only-secret
+      EMAIL_PROVIDER: smtp
+      SMTP_URL: smtp://localhost:1025
+      EMAIL_FROM: Roost CI <ci@roost.local>
+      # Integration tests use in-memory attachment storage; these only satisfy env parsing.
+      S3_ENDPOINT: http://localhost:9000
+      S3_BUCKET: roost
+      S3_ACCESS_KEY: ci
+      S3_SECRET_KEY: ci
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check:structure
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm db:migrate
+      - run: pnpm test
+      - name: Changelog updated
+        if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'skip-changelog')
+        run: |
+          changed=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          if echo "$changed" | grep -qE '^(apps|packages|sdks)/' && ! echo "$changed" | grep -qE 'CHANGELOG\.md$'; then
+            echo "Code changed but no CHANGELOG.md was updated. Add an entry or label the PR skip-changelog."
+            exit 1
+          fi
+
+  rust:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/rust
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test

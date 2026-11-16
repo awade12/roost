@@ -1,0 +1,48 @@
+# Local dev: only the stateful services. Run api/worker/dashboard with `pnpm dev`.
+name: roost-dev
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: roost
+      POSTGRES_PASSWORD: roost
+      POSTGRES_DB: roost
+    ports: ["5433:5432"] # 5433 on the host so it never clashes with a local Postgres
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U roost"]
+      interval: 5s
+      retries: 10
+  # Events and other high-volume, append-only data. Everything relational stays in Postgres.
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.8
+    environment:
+      CLICKHOUSE_USER: roost
+      CLICKHOUSE_PASSWORD: roost
+      CLICKHOUSE_DB: roost
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    ports: ["8123:8123"]
+    ulimits:
+      nofile: { soft: 262144, hard: 262144 }
+    volumes: [chdata:/var/lib/clickhouse]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8123/ping"]
+      interval: 5s
+      retries: 20
+  # Catches every email in dev. Inbox: http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.29
+    ports: ["1025:1025", "8025:8025"]
+  # S3-compatible blob storage. MinIO stopped publishing images; RustFS replaces it.
+  s3:
+    image: rustfs/rustfs:1.0.6
+    environment:
+      RUSTFS_ACCESS_KEY: roost
+      RUSTFS_SECRET_KEY: roostroost
+      RUSTFS_CONSOLE_ENABLE: "true"
+    ports: ["9000:9000", "9001:9001"]
+    volumes: [s3data:/data]
+volumes:
+  pgdata:
+  chdata:
+  s3data:

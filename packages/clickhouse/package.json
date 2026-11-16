@@ -1,0 +1,16 @@
+{
+  "name": "@roost/clickhouse",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "ch:migrate": "tsx --env-file-if-exists=../../.env src/migrations/cli.ts"
+  },
+  "dependencies": {
+    "@clickhouse/client": "^1.25.0",
+    "zod": "^4.6.7"
+  }
+}

@@ -1,0 +1,63 @@
+# Production on one server. Secrets come from ../.env (never committed).
+name: roost
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-roost}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: roost
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U roost"]
+      interval: 5s
+      retries: 10
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.8
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-roost}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?set CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DB: roost
+    ulimits:
+      nofile: { soft: 262144, hard: 262144 }
+    volumes: [chdata:/var/lib/clickhouse]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8123/ping"]
+      interval: 5s
+      retries: 20
+  s3:
+    image: rustfs/rustfs:1.0.6
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:?set S3_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY}
+    volumes: [s3data:/data]
+  api:
+    build: { context: .., dockerfile: infra/Dockerfile.api }
+    restart: unless-stopped
+    env_file: ../.env
+    depends_on:
+      postgres: { condition: service_healthy }
+      clickhouse: { condition: service_healthy }
+  worker:
+    build: { context: .., dockerfile: infra/Dockerfile.worker }
+    restart: unless-stopped
+    env_file: ../.env
+    depends_on:
+      postgres: { condition: service_healthy }
+      clickhouse: { condition: service_healthy }
+  caddy:
+    build: { context: .., dockerfile: infra/Dockerfile.caddy }
+    restart: unless-stopped
+    environment:
+      ROOST_DOMAIN: ${ROOST_DOMAIN:?set ROOST_DOMAIN}
+    ports: ["80:80", "443:443"]
+    volumes: [caddydata:/data]
+    depends_on: [api]
+volumes:
+  pgdata:
+  chdata:
+  s3data:
+  caddydata:
