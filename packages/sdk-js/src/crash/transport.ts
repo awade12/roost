@@ -10,7 +10,7 @@ export type PendingReport = { report: Crash; files: PendingFile[]; sent: boolean
 
 const toBytes = (data: string | Uint8Array) => (typeof data === "string" ? new TextEncoder().encode(data) : data);
 const toBase64 = (bytes: Uint8Array) => btoa(Array.from(bytes, (b) => String.fromCharCode(b)).join(""));
-const fromBase64 = (b64: string) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+export const fromBase64 = (b64: string) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 
 /** Turns attachments into pending files + the refs the report declares. Over-limit files are dropped. */
 export function prepareFiles(attachments: Attachment[]): PendingFile[] {

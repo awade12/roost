@@ -10,6 +10,15 @@ Rules: see "Changelog" in `SPEC.md`.
 ## [Unreleased]
 
 ### Added
+- **api** Player reports: `POST /v1/reports` (a player's message, category, optional email, tags, contexts, extra, breadcrumbs) and `PUT /v1/reports/:reportId/attachments/:attachmentId` for screenshots and saves. Additive to `/v1`; retries are stored once.
+- **api** Admin: list reports per environment (open/closed), report detail with files, close/reopen, and link a report to an issue in the same environment.
+- **dashboard** Player reports page: open/closed list, and a report page with the player's message, screenshots shown inline, file downloads, device, tags, contexts and what the player did before reporting. Copy the player's email when they shared one.
+- **api** Game settings (`GET`/`PUT /admin/games/:gameId/settings`): pause a game's whole `/v1` API, set the per-key rate limit, choose how many stack frames group issues, and auto-resolve quiet issues. Saved per game with defaults in code; owners only.
+- **api** Rename games and studios, add environments (e.g. `staging`), change member roles and remove members. A studio always keeps at least one owner.
+- **api** Alerts: Discord, Slack, webhook and email channels per studio (with a test send), and rules per game for new issues, regressions and spikes (N reports in M minutes, then quiet for a cooldown). The worker checks rules every minute; each alert is sent once and listed in the alert history, with delivery errors.
+- **dashboard** Settings with tabs (Studio, Members, Games & keys, Integrations) and a settings page per game: name, environments, game API switches, issue grouping and auto-resolve, and AI limits. Changed values show their default and a reset.
+- **dashboard** Alerts page: rules with on/off switches, a rule editor, and recently sent alerts. Alert channels live under Settings → Integrations.
+- **dashboard** New text-only Roost wordmark in the sidebar and sign-in screens.
 - **repo** Monorepo scaffold: pnpm + Turborepo, shared strict TypeScript config, ESLint rules, CI (structure, lint, typecheck, tests, changelog check, Rust fmt/clippy/test).
 - **repo** `pnpm check:structure` enforces 500 lines per file and 5 source files per folder.
 - **api** Hono server with `/health`, the standard error shape, request IDs and structured logs.
@@ -50,7 +59,14 @@ Rules: see "Changelog" in `SPEC.md`.
 - **infra** Docker Compose for local dev (Postgres, ClickHouse, RustFS for S3-compatible storage, Mailpit for email) and production (plus api, worker, Caddy on one domain).
 - **docs** Product spec (`SPEC.md`): modules, project structure, code rules, changelog rules.
 
+### Changed
+- **api** The `/v1` rate limit is now per key and set per game (default 120 a minute, as before) instead of fixed. Key lookups are cached for 30 seconds; revoking a key still takes effect at once on the same server.
+
+### Fixed
+- **dashboard** Segmented controls inside forms no longer submit the form when clicked.
+
 ### Security
+- **api** Alert webhook URLs are encrypted at rest like integration keys and never returned; the dashboard shows only the host and last 4 characters. Discord and Slack URLs must be the provider's webhook endpoint, and others must be https. Test sends go only to the person testing.
 - **api** Sign-in codes expire after 10 minutes, work once, die after 5 wrong tries, and only the newest code works. They are stored as an HMAC, never in plain text, and never logged.
 - **api** Code requests are limited to 3 per email and 10 per IP per 15 minutes; checks to 20 per IP. `SIGNUP_ALLOWLIST` controls who may create an account, and the form answers the same for every email.
 - **api** Keys are shown once and stored only as SHA-256 hashes, prefixed `rk_client_` / `rk_server_` so leaks are easy to spot. Only owners can create server keys; viewers can't create or revoke anything; non-members get 404 for another studio's IDs.

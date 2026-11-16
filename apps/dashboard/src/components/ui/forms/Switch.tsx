@@ -1,9 +1,16 @@
 import { cn } from "../../../lib/cn.ts";
 
-type Props = { checked: boolean; onChange: (checked: boolean) => void; label?: string; disabled?: boolean };
+type Props = {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label?: string;
+  /** Label for screen readers only, when the row around the switch already names it. */
+  hideLabel?: boolean;
+  disabled?: boolean;
+};
 
 /** On/off toggle. Use for settings that apply immediately; use a checkbox inside forms that need Save. */
-export function Switch({ checked, onChange, label, disabled }: Props) {
+export function Switch({ checked, onChange, label, hideLabel, disabled }: Props) {
   return (
     <button
       type="button"
@@ -27,7 +34,7 @@ export function Switch({ checked, onChange, label, disabled }: Props) {
           )}
         />
       </span>
-      {label && <span className="text-[13px] text-fg">{label}</span>}
+      {label && !hideLabel && <span className="text-[13px] text-fg">{label}</span>}
     </button>
   );
 }

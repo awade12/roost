@@ -8,6 +8,8 @@ mod scope;
 pub use build::{
     Attachment, Capture, MAX_ATTACHMENT_BYTES, MAX_ATTACHMENTS, PANIC_ATTACHMENT_BUDGET,
 };
-pub(crate) use build::{Raw, Who, build, to_object};
+pub(crate) use build::{
+    Raw, Who, build, clean_tags, limit_contexts, limit_extra, pick_files, to_object,
+};
 pub(crate) use panic::{describe, describe_error, install, short_type_name};
 pub(crate) use scope::Scope;

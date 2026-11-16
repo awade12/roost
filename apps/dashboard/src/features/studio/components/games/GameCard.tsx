@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button, Card, ConfirmDialog } from "../../../../components/ui/index.ts";
 import type { Environment, Game } from "../../api/use-games.ts";
@@ -92,7 +93,10 @@ export function GameCard({ orgId, game, role }: { orgId: string; game: Game; rol
     <Card>
       <header className="flex h-11 items-center gap-2 px-4">
         <h2 className="text-sm font-medium">{game.name}</h2>
-        <span className="font-mono text-xs text-muted">{game.slug}</span>
+        <span className="flex-1 font-mono text-xs text-muted">{game.slug}</span>
+        <Link to="/settings/games/$gameId" params={{ gameId: game.id }} className="text-xs text-muted hover:text-fg">
+          Settings →
+        </Link>
       </header>
       {[...game.environments]
         .sort((a, b) => envOrder(a) - envOrder(b))

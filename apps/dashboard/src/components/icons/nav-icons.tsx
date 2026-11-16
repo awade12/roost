@@ -87,3 +87,17 @@ export const KeyIcon = () => (
     <path d="M7.6 8.4L13.5 2.5M11 5l1.8 1.8M9.5 6.5l1.3 1.3" />
   </Icon>
 );
+
+export const AlertsIcon = () => (
+  <Icon>
+    <path d="M4 11.5V7.5a4 4 0 0 1 8 0v4l1 1.2H3z" />
+    <path d="M6.6 14a1.5 1.5 0 0 0 2.8 0" />
+  </Icon>
+);
+
+export const SettingsIcon = () => (
+  <Icon>
+    <circle cx="8" cy="8" r="2" />
+    <path d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M3.6 12.4l1.1-1.1M11.3 4.7l1.1-1.1" />
+  </Icon>
+);

@@ -14,7 +14,7 @@ export function CreateOrg() {
     <div className="flex min-h-screen items-center justify-center px-4">
       <form onSubmit={submit} className="flex w-full max-w-[360px] flex-col gap-6">
         <div className="flex flex-col items-center gap-4 text-center">
-          <Logo size={32} />
+          <Logo height={28} className="text-fg" />
           <div className="flex flex-col gap-1">
             <h1 className="text-lg font-semibold tracking-tight">Name your studio</h1>
             <p className="text-muted">Your games and their keys live under it.</p>

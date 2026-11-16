@@ -119,3 +119,38 @@ fn ai_returns_text_or_the_api_error() {
     let err = roost.ai("greet", ()).unwrap_err();
     assert!(matches!(err, RoostError::Api { status: 429, ref code, .. } if code == "rate_limited"));
 }
+
+#[test]
+fn player_reports_carry_scope_and_files_and_skip_a_missing_email() {
+    let fake = Fake::new();
+    let cfg = config(&fake).attachments(|| vec![roost_sdk::Attachment::new("save.json", "{}")]);
+    let roost = Roost::start(cfg).unwrap();
+    roost.set_tag("level", "forest-3");
+    fake.set_status(202);
+    let id = roost
+        .report(
+            roost_sdk::PlayerReport::new("  Can't jump  ")
+                .attachment(roost_sdk::Attachment::new("screenshot.png", vec![1, 2])),
+        )
+        .unwrap();
+    let body = &fake.bodies("/v1/reports")[0]["report"];
+    assert_eq!(body["id"], id.as_str());
+    assert_eq!(body["message"], "Can't jump");
+    assert_eq!(body["category"], "bug");
+    assert_eq!(body["tags"]["level"], "forest-3");
+    assert!(body.get("email").is_none());
+    let names: Vec<String> = fake
+        .puts
+        .lock()
+        .unwrap()
+        .iter()
+        .map(|p| p.filename.clone())
+        .collect();
+    assert_eq!(names, ["screenshot.png", "save.json"]);
+
+    fake.set_status(400);
+    assert!(matches!(
+        roost.report(roost_sdk::PlayerReport::new("x").email("a@b.co")),
+        Err(RoostError::Api { status: 400, .. })
+    ));
+}

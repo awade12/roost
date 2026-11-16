@@ -1,9 +1,12 @@
 export * as ai from "./ai/index.ts";
+export * as alerts from "./alerts/index.ts";
 export * as analytics from "./analytics/index.ts";
 export * as auth from "./auth/index.ts";
 export * as email from "./email/index.ts";
 export * as ingest from "./ingest/index.ts";
 export * as integrations from "./integrations/index.ts";
 export * as issues from "./issues/index.ts";
+export * as reports from "./reports/index.ts";
+export * as settings from "./settings/index.ts";
 export * as storage from "./storage/index.ts";
 export * as studio from "./studio/index.ts";

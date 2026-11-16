@@ -1,9 +1,26 @@
-export function Logo({ size = 20 }: { size?: number }) {
+/**
+ * The Roost wordmark: bold "roost" with the two o's joined (option C, drawn with
+ * Paper's Arrow 2 Telos). Uses currentColor, so text-* classes color it.
+ * `height` in px; width follows the 931:280 shape.
+ */
+export function Logo({ height = 18, className }: { height?: number; className?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 20 20" aria-hidden>
-      <rect width="20" height="20" rx="5" className="fill-fg" />
-      <path d="M5.5 12.5c2-4 6-4.8 8.5-2.6" className="stroke-bg" strokeWidth="1.8" fill="none" strokeLinecap="round" />
-      <circle cx="12.6" cy="7" r="1.2" className="fill-bg" />
+    <svg
+      viewBox="46 47 931 280"
+      height={height}
+      width={(height * 931) / 280}
+      fill="currentColor"
+      role="img"
+      aria-label="Roost"
+      className={className}
+    >
+      <path d="M46 100H120V135C136 106 163 90 210 96L204 166C178 160 155 163 139 178C126 190 120 207 120 230V318H46Z" />
+      <path
+        fillRule="evenodd"
+        d="M195 209C195 143 246 94 317 94C359 94 393 111 417 142C440 112 475 94 517 94C588 94 637 143 637 209C637 275 588 325 517 325C475 325 439 307 416 277C393 307 359 325 317 325C246 325 195 276 195 209ZM263 209C263 240 285 261 317 261C348 261 370 240 370 209C370 179 348 158 317 158C285 158 263 179 263 209ZM462 209C462 240 484 261 516 261C548 261 570 240 570 209C570 179 548 158 516 158C484 158 462 179 462 209Z"
+      />
+      <path d="M625 292L660 242C682 261 708 272 731 272C744 272 750 267 750 259C750 251 743 247 717 240L692 233C653 222 635 202 635 169C635 122 673 93 726 93C760 93 790 102 816 120L784 171C763 156 744 148 726 148C713 148 706 153 706 161C706 169 714 173 741 180L763 186C804 197 821 217 821 249C821 299 784 327 729 327C689 327 652 315 625 292Z" />
+      <path d="M823 100H853V47H926V100H977V158H926V235C926 253 934 261 951 261C960 261 969 258 977 255V317C964 322 950 324 932 324C880 324 853 300 853 249V158H823Z" />
     </svg>
   );
 }

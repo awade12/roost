@@ -30,7 +30,9 @@ mod error;
 mod model;
 mod transport;
 
-pub use client::{AiResponse, AiUsage, AttachmentsFn, BeforeSend, Config, Roost};
+pub use client::{
+    AiResponse, AiUsage, AttachmentsFn, BeforeSend, Config, PlayerReport, ReportCategory, Roost,
+};
 pub use crash::{
     Attachment, Capture, MAX_ATTACHMENT_BYTES, MAX_ATTACHMENTS, PANIC_ATTACHMENT_BUDGET,
 };

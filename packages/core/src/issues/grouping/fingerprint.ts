@@ -17,17 +17,17 @@ export function normalize(text: string): string {
 
 const basename = (file?: string) => file?.split(/[\\/]/).pop() ?? "?";
 
-/** Up to three frames that identify where it broke: in-app frames first. */
-export function topFrames(crash: Pick<Crash, "frames" | "stack" | "type" | "message">): string[] {
+/** Up to `count` frames (a game setting, default 3) that identify where it broke: in-app frames first. */
+export function topFrames(crash: Pick<Crash, "frames" | "stack" | "type" | "message">, count = 3): string[] {
   if (crash.frames?.length) {
     const inApp = crash.frames.filter((f) => f.inApp !== false);
-    return (inApp.length ? inApp : crash.frames).slice(0, 3).map((f) => `${f.function ?? "?"}@${basename(f.file)}`);
+    return (inApp.length ? inApp : crash.frames).slice(0, count).map((f) => `${f.function ?? "?"}@${basename(f.file)}`);
   }
   return crash.stack
     .split("\n")
     .map((l) => l.trim())
     .filter((l) => l && !l.startsWith(`${crash.type}:`) && l !== crash.message)
-    .slice(0, 3)
+    .slice(0, count)
     .map(normalize);
 }
 
@@ -35,9 +35,12 @@ export function topFrames(crash: Pick<Crash, "frames" | "stack" | "type" | "mess
  * Same bug → same fingerprint, across builds, devices and players. A
  * developer-supplied fingerprint (from the SDK) replaces the automatic one.
  */
-export function fingerprint(crash: Pick<Crash, "frames" | "stack" | "type" | "message"> & { fingerprint?: string[] | undefined }): string {
+export function fingerprint(
+  crash: Pick<Crash, "frames" | "stack" | "type" | "message"> & { fingerprint?: string[] | undefined },
+  frameCount = 3,
+): string {
   if (crash.fingerprint?.length) return sha256(["custom", ...crash.fingerprint].join("\n")).slice(0, 32);
-  const frames = topFrames(crash);
+  const frames = topFrames(crash, frameCount);
   // Without a stack, the message is the only identity we have.
   const parts = frames.length ? [crash.type, ...frames] : [crash.type, normalize(crash.message)];
   return sha256(parts.join("\n")).slice(0, 32);

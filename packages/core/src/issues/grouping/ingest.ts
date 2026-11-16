@@ -25,8 +25,8 @@ async function touch(tx: Tx, existing: typeof issues.$inferSelect, at: Date, bui
   }
 }
 
-async function upsertIssue(db: Db, environmentId: string, crash: Crash, context: EventContext): Promise<string> {
-  const fp = fingerprint(crash);
+async function upsertIssue(db: Db, environmentId: string, crash: Crash, context: EventContext, frameCount: number): Promise<string> {
+  const fp = fingerprint(crash, frameCount);
   const at = new Date(crash.ts);
   return db.transaction(async (tx) => {
     // Serializes issue creation per environment so issue numbers don't collide.
@@ -90,11 +90,15 @@ function row(environmentId: string, issueId: string, crash: Crash, context: Even
   };
 }
 
-/** Groups each report into an issue and stores it. Returns how many were stored. */
-export async function recordCrashes(db: Db, ch: Clickhouse, environmentId: string, batch: CrashBatch): Promise<number> {
+/**
+ * Groups each report into an issue and stores it. Returns how many were stored.
+ * `groupingFrames` comes from the game's settings.
+ */
+export async function recordCrashes(db: Db, ch: Clickhouse, environmentId: string, batch: CrashBatch, groupingFrames = 3): Promise<number> {
   const rows = [];
   for (const crash of batch.crashes) {
-    rows.push(row(environmentId, await upsertIssue(db, environmentId, crash, batch.context), crash, batch.context));
+    const issueId = await upsertIssue(db, environmentId, crash, batch.context, groupingFrames);
+    rows.push(row(environmentId, issueId, crash, batch.context));
   }
   await ch.insert({ table: "crash_events", values: rows, format: "JSONEachRow" });
   return rows.length;

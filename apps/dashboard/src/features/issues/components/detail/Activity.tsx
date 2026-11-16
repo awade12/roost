@@ -9,7 +9,9 @@ function describe(a: Entry): string {
   const d = (a.data ?? {}) as Record<string, string | null | undefined>;
   switch (a.kind) {
     case "status":
-      return d.reason === "regression" ? `Regressed in ${d.build ?? "a new build"} and reopened` : `changed status from ${d.from} to ${d.to}`;
+      if (d.reason === "regression") return `Regressed in ${d.build ?? "a new build"} and reopened`;
+      if (d.reason === "auto") return `Auto-resolved after ${d.days ?? "some"} quiet days`;
+      return `changed status from ${d.from} to ${d.to}`;
     case "assigned":
       return d.to ? "assigned the issue" : "unassigned the issue";
     case "labeled":

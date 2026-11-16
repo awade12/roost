@@ -1,9 +1,9 @@
-mod ai;
+mod calls;
 mod config;
 mod shared;
 mod worker;
 
-pub use ai::{AiResponse, AiUsage};
+pub use calls::{AiResponse, AiUsage, PlayerReport, ReportCategory};
 pub use config::{AttachmentsFn, BeforeSend, Config};
 
 use crate::crash::{self, Attachment, Capture, Raw, Scope, to_object};

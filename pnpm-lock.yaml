@@ -284,6 +284,15 @@ importers:
 
   apps/worker:
     dependencies:
+      '@roost/clickhouse':
+        specifier: workspace:*
+        version: link:../../packages/clickhouse
+      '@roost/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@roost/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       pg-boss:
         specifier: ^12.38.2
         version: 12.38.2(@opentelemetry/api@1.10.0)

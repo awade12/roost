@@ -1,15 +1,16 @@
 import type { ComponentType } from "react";
 import {
   AiIcon,
+  AlertsIcon,
   ConfigIcon,
   EventsIcon,
   FunnelIcon,
   IssuesIcon,
-  KeyIcon,
   OverviewIcon,
   PlayersIcon,
   ReportsIcon,
   RetentionIcon,
+  SettingsIcon,
   UpdatesIcon,
 } from "../components/icons/nav-icons.tsx";
 
@@ -31,6 +32,7 @@ export const ANALYTICS_NAV: NavItem[] = [
 
 export const OPERATE_NAV: NavItem[] = [
   { to: "/issues", label: "Issues", icon: IssuesIcon, blurb: "Crashes and errors grouped by cause, with AI triage." },
+  { to: "/alerts", label: "Alerts", icon: AlertsIcon, blurb: "" },
   { to: "/reports", label: "Player reports", icon: ReportsIcon, blurb: "Bug reports players send from inside your games." },
   { to: "/ai", label: "AI proxy", icon: AiIcon, blurb: "Prompt templates, models, spend and limits for OpenRouter." },
   { to: "/config", label: "Config & flags", icon: ConfigIcon, blurb: "Change values and roll out features without an app update." },
@@ -38,7 +40,7 @@ export const OPERATE_NAV: NavItem[] = [
 ];
 
 export const SETTINGS_NAV: NavItem[] = [
-  { to: "/settings", label: "Games & keys", icon: KeyIcon, blurb: "" },
+  { to: "/settings", label: "Settings", icon: SettingsIcon, blurb: "" },
 ];
 
 export const ALL_NAV = [...ANALYTICS_NAV, ...OPERATE_NAV, ...SETTINGS_NAV];

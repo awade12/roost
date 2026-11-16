@@ -5,6 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · [SemVer](htt
 ## [Unreleased]
 
 ### Added
+- **sdk-js** `roost.report({ message, category, email, attachments })` sends a player's bug report with the current tags, contexts, breadcrumbs and `getAttachments` files (e.g. the save). Returns `{ ok, id }` or `{ ok: false, error }` instead of throwing.
 - **sdk-js** Full control over crash reports: `setTag` / `removeTag`, `setContext`, `setExtra`, `addBreadcrumb` (category, level, message), per-report `tags` / `contexts` / `extra` / `level` / `fingerprint`, `captureMessage`, and `beforeSend` to edit or drop any report.
 - **sdk-js** Attachments: pass `attachments` per report or `getAttachments` (e.g. the save file) for every report. Up to 5 files, 10 MB each; fatal crashes keep up to 2 MB so they can be saved before the app exits. Files upload after the report, and retry on the next launch if offline.
 - **sdk-js** `maxBreadcrumbs` option (default 50, max 100).

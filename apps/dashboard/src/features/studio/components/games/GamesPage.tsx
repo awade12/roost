@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "../../../../components/ui/index.ts";
 import { Card } from "../../../../components/ui/index.ts";
 import { EmptyState } from "../../../../components/ui/index.ts";
-import { LinearCard } from "../../../integrations/index.ts";
 import { useCurrentOrg } from "../../api/use-current-org.ts";
 import { useGames } from "../../api/use-games.ts";
 import { CreateGameForm } from "./CreateGameForm.tsx";
@@ -20,12 +19,9 @@ function Games({ orgId, role }: { orgId: string; role: "owner" | "dev" | "viewer
   const canEdit = role !== "viewer";
 
   return (
-    <div className="flex max-w-4xl flex-col gap-5 px-8 py-6">
+    <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-lg font-semibold tracking-tight">Games & keys</h1>
-          <p className="text-muted">Each game has environments. Put a client key in your game build to send data.</p>
-        </div>
+        <p className="text-muted">Each game has environments. Put a client key in your game build to send data.</p>
         {canEdit && games.data && games.data.length > 0 && !adding && (
           <Button variant="primary" onClick={() => setAdding(true)}>
             New game
@@ -54,9 +50,6 @@ function Games({ orgId, role }: { orgId: string; role: "owner" | "dev" | "viewer
         </Card>
       )}
       {games.data?.map((game) => <GameCard key={game.id} orgId={orgId} game={game} role={role} />)}
-
-      <h2 className="mt-4 text-sm font-semibold">Integrations</h2>
-      <LinearCard orgId={orgId} isOwner={role === "owner"} />
     </div>
   );
 }

@@ -14,6 +14,8 @@ export function Segmented<T extends string | number>({ label, options, value, on
       {options.map((o) => (
         <button
           key={o.value}
+          // Not a submit button: Segmented is often used inside forms.
+          type="button"
           role="radio"
           aria-checked={o.value === value}
           onClick={() => onChange(o.value)}

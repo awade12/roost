@@ -5,6 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · [SemVer](htt
 ## [Unreleased]
 
 ### Added
+- **sdk-rust** `Roost::report(PlayerReport)` sends a player's bug report with a screenshot, the scope and `Config::attachments` files, and returns its id. Blocks until sent; call it off the render thread.
 - **sdk-rust** `Roost::start(Config)` client: events are queued and sent from a background thread, kept on disk between launches with `Config::data_dir`.
 - **sdk-rust** Panics are reported automatically with parsed frames, the thread name, the scope and attachments (2 MB budget); `Config::in_app` marks the game's own crates for grouping.
 - **sdk-rust** `capture_error` (with the `source()` chain and stack) and `capture_message`, with per-report `Capture` options: level, tags, contexts, extra, fingerprint, attachments.

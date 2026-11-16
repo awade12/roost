@@ -80,3 +80,18 @@ export async function listGames(db: Db, orgId: string): Promise<GameSummary[]> {
       })),
   }));
 }
+
+export async function renameGame(db: Db, gameId: string, name: string) {
+  const [game] = await db.update(games).set({ name }).where(eq(games.id, gameId)).returning({ id: games.id, name: games.name });
+  return game ?? null;
+}
+
+/** Adds an environment such as "staging". Returns null if the game already has one with that name. */
+export async function addEnvironment(db: Db, gameId: string, name: string) {
+  const [env] = await db
+    .insert(environments)
+    .values({ gameId, name })
+    .onConflictDoNothing()
+    .returning({ id: environments.id, name: environments.name });
+  return env ?? null;
+}

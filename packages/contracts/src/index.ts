@@ -1,4 +1,5 @@
 export * from "./ai.ts";
-export * from "./crashes.ts";
 export * from "./errors.ts";
-export * from "./events.ts";
+export * from "./reports.ts";
+export * from "./telemetry/crashes.ts";
+export * from "./telemetry/events.ts";

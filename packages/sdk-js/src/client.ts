@@ -1,9 +1,10 @@
 import { MAX_EVENTS_PER_BATCH, type AiRunResponse, type ErrorBody } from "@roost/contracts";
 import { CrashReporter, installHandlers, Scope, type BreadcrumbInput, type CaptureOptions } from "./crash/index.ts";
 import { EventQueue } from "./queue.ts";
+import { sendReport, type ReportInput, type ReportResult } from "./report.ts";
 import type { RoostOptions } from "./types.ts";
 
-const SDK_VERSION = "js/0.2.0";
+const SDK_VERSION = "js/0.3.0";
 
 /** An AI proxy call failed. `code` is the API error code, e.g. "rate_limited". */
 export class RoostAiError extends Error {
@@ -59,6 +60,14 @@ export class Roost {
   /** Report something that isn't an exception, e.g. "Save migration fell back to defaults". */
   captureMessage(message: string, options: CaptureOptions = {}): Promise<void> {
     return this.crashes.capture({ kind: "message", type: "Message", message: message.slice(0, 2000), stack: "" }, { level: "info", ...options });
+  }
+
+  /**
+   * Sends a bug report the player wrote ("Report a bug" in your menu), with a screenshot
+   * if you pass one and your `getAttachments` files (e.g. the save). Never throws.
+   */
+  report(input: ReportInput): Promise<ReportResult> {
+    return sendReport(this.opts, this.sessionId, SDK_VERSION, this.scope, input);
   }
 
   /** Tag every later report, e.g. setTag("level", "forest-3"). Searchable in the dashboard. */

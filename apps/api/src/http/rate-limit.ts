@@ -10,8 +10,8 @@ type LimiterOptions = { limit: number; windowMs: number };
 export function createLimiter({ limit, windowMs }: LimiterOptions) {
   const hits = new Map<string, { count: number; resetAt: number }>();
   return {
-    /** Counts a hit; throws `rate_limited` once `key` is over the limit. */
-    hit(key: string): void {
+    /** Counts a hit; throws `rate_limited` once `key` is over the limit (`override` replaces it per call). */
+    hit(key: string, override?: number): void {
       const now = Date.now();
       const entry = hits.get(key);
       if (!entry || entry.resetAt <= now) {
@@ -20,7 +20,7 @@ export function createLimiter({ limit, windowMs }: LimiterOptions) {
         return;
       }
       entry.count += 1;
-      if (entry.count > limit) throw new AppError("rate_limited", "Too many requests. Try again later.");
+      if (entry.count > (override ?? limit)) throw new AppError("rate_limited", "Too many requests. Try again later.");
     },
   };
 }

@@ -91,7 +91,7 @@ export function SignIn() {
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="flex w-full max-w-[340px] flex-col gap-6">
         <div className="flex flex-col items-center gap-4 text-center">
-          <Logo size={32} />
+          <Logo height={28} className="text-fg" />
           <div className="flex flex-col gap-1">
             <h1 className="text-lg font-semibold tracking-tight">Sign in to Roost</h1>
             <p className="text-[13px] text-muted">No password. We'll email you a code.</p>

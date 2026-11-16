@@ -3,6 +3,7 @@ import { studio } from "@roost/core";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { AppDeps } from "../../../app.ts";
+import { forgetKeys } from "../../../http/client-key.ts";
 import { AppError } from "../../../http/errors.ts";
 import { requireSession, type SessionVars } from "../auth/index.ts";
 import { invalid, requireOrgRole } from "../access.ts";
@@ -31,6 +32,7 @@ export function keyRoutes({ db }: AppDeps) {
       const { keyId } = c.req.valid("param");
       await requireOrgRole(db, c.get("userId"), await studio.orgOfKey(db, keyId), "dev");
       if (!(await studio.revokeKey(db, keyId))) throw new AppError("not_found", "Key already revoked");
+      forgetKeys();
       return c.json({ ok: true as const });
     });
 }

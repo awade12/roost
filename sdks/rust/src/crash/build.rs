@@ -203,7 +203,7 @@ pub(crate) fn build(
 
 type Files = (Vec<AttachmentRef>, Vec<(String, Vec<u8>)>);
 
-fn pick_files(files: impl Iterator<Item = Attachment>, budget: usize) -> Files {
+pub(crate) fn pick_files(files: impl Iterator<Item = Attachment>, budget: usize) -> Files {
     let (mut refs, mut bytes, mut used) = (Vec::new(), Vec::new(), 0usize);
     for file in files
         .filter(|f| f.data.len() <= MAX_ATTACHMENT_BYTES)
@@ -230,7 +230,7 @@ fn pick_files(files: impl Iterator<Item = Attachment>, budget: usize) -> Files {
     (refs, bytes)
 }
 
-fn clean_tags(tags: BTreeMap<String, String>) -> BTreeMap<String, String> {
+pub(crate) fn clean_tags(tags: BTreeMap<String, String>) -> BTreeMap<String, String> {
     let valid_key = |k: &str| {
         (1..=32).contains(&k.len())
             && k.chars()
@@ -256,7 +256,7 @@ fn json_len(value: &impl Serialize) -> usize {
 }
 
 /// Over the size limit, the block is replaced with a note rather than rejecting the whole report.
-fn limit_contexts(contexts: BTreeMap<String, JsonMap>) -> BTreeMap<String, JsonMap> {
+pub(crate) fn limit_contexts(contexts: BTreeMap<String, JsonMap>) -> BTreeMap<String, JsonMap> {
     let contexts: BTreeMap<_, _> = contexts
         .into_iter()
         .filter(|(k, _)| k.chars().count() <= 32)
@@ -271,7 +271,7 @@ fn limit_contexts(contexts: BTreeMap<String, JsonMap>) -> BTreeMap<String, JsonM
     )])
 }
 
-fn limit_extra(extra: JsonMap) -> JsonMap {
+pub(crate) fn limit_extra(extra: JsonMap) -> JsonMap {
     let extra = short_keys(extra);
     if json_len(&extra) <= MAX_EXTRA_JSON {
         extra

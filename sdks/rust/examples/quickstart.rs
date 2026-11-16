@@ -2,7 +2,9 @@
 //!
 //! ROOST_ENDPOINT=http://localhost:8787 ROOST_KEY=rk_client_… cargo run --example quickstart
 
-use roost_sdk::{Attachment, Breadcrumb, BreadcrumbLevel, Capture, Config, Roost, TrackEvent};
+use roost_sdk::{
+    Attachment, Breadcrumb, BreadcrumbLevel, Capture, Config, PlayerReport, Roost, TrackEvent,
+};
 use std::fmt;
 
 #[derive(Debug)]
@@ -19,6 +21,15 @@ impl std::error::Error for SaveCorrupt {
         Some(&self.0)
     }
 }
+
+/// Smallest valid PNG (1×1, dark gray), standing in for a real screenshot.
+const PNG_1X1: &[u8] = &[
+    0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+    0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x00, 0x00, 0x00, 0x00, 0x3A, 0x7E, 0x9B,
+    0x55, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x60, 0x00, 0x00, 0x00,
+    0x02, 0x00, 0x01, 0xE2, 0x21, 0xBC, 0x33, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
+    0x42, 0x60, 0x82,
+];
 
 fn load_level(n: usize) -> u32 {
     let spawns: Vec<u32> = vec![1, 2];
@@ -64,6 +75,17 @@ fn main() -> Result<(), roost_sdk::RoostError> {
 
     let err = SaveCorrupt(std::io::Error::other("unexpected end of file"));
     roost.capture_error(&err, Capture::new().tag("slot", 2).extra("saveVersion", 7));
+
+    // What "Report a bug" in the pause menu would send (blocking: call off the render thread).
+    let screenshot = Attachment::new("screenshot.png", PNG_1X1.to_vec());
+    match roost.report(
+        PlayerReport::new("The door after the forest-3 boss never opens")
+            .attachment(screenshot)
+            .tag("area", "boss-door"),
+    ) {
+        Ok(id) => println!("report sent: {id}"),
+        Err(e) => println!("report failed: {e}"),
+    }
 
     // A panic on a loader thread: reported by the hook, game keeps running.
     let _ = std::thread::Builder::new()

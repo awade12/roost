@@ -47,9 +47,9 @@ export function Sidebar() {
   const org = me.data?.orgs[0];
   return (
     <aside className="flex w-58 shrink-0 flex-col gap-4 border-r border-border bg-panel px-2.5 py-3">
-      <div className="flex items-center gap-2 px-2 py-1.5">
-        <Logo />
-        <span className="truncate font-medium">{org?.name ?? "Roost"}</span>
+      <div className="flex flex-col gap-1 px-2 py-1.5">
+        <Logo height={18} className="text-fg" />
+        {org && <span className="truncate text-xs text-muted">{org.name}</span>}
       </div>
       <nav className="flex flex-col gap-px">
         {ANALYTICS_NAV.map((item) => (

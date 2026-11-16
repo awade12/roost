@@ -39,7 +39,7 @@ export function GetStarted() {
         <Step n={1} title="Create a game and a client key">
           <p className="text-muted">
             In{" "}
-            <Link to="/settings" className="text-fg underline underline-offset-2 hover:text-white">
+            <Link to="/settings/games" className="text-fg underline underline-offset-2 hover:text-white">
               Games &amp; keys
             </Link>
             , create a game and copy a client key from its production environment.

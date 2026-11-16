@@ -20,6 +20,8 @@ export type AppDeps = {
   ai: { apiKey: string | undefined; fetch?: typeof fetch };
   /** Linear API calls; `fetch` is injected in tests. `dashboardUrl` is linked from created Linear issues. */
   linear: { fetch?: typeof fetch; dashboardUrl: string | undefined };
+  /** Test sends to alert channels; `fetch` is injected in tests. */
+  alerts?: { fetch?: typeof fetch };
 };
 
 export function createApp(deps: AppDeps) {
