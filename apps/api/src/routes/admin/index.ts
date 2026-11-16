@@ -9,7 +9,7 @@ import { integrationRoutes } from "./integrations/index.ts";
 import { collabRoutes, eventRoutes, issueRoutes, linearRoutes } from "./issues/index.ts";
 import { reportAdminRoutes } from "./reports/index.ts";
 import { gameSettingsRoutes, studioSettingsRoutes } from "./settings/index.ts";
-import { gameRoutes, keyRoutes, orgRoutes } from "./studio/index.ts";
+import { gameRoutes, keyRoutes, navRoutes, orgRoutes } from "./studio/index.ts";
 
 /**
  * Dashboard-only API, authenticated by the session cookie. Free to change:
@@ -35,7 +35,8 @@ export function adminRoutes(deps: AppDeps) {
     .route("/", studioSettingsRoutes(deps))
     .route("/", alertChannelRoutes(deps))
     .route("/", alertRuleRoutes(deps))
-    .route("/", reportAdminRoutes(deps));
+    .route("/", reportAdminRoutes(deps))
+    .route("/", navRoutes(deps));
 }
 
 export type AdminApp = ReturnType<typeof adminRoutes>;

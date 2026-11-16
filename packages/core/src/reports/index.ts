@@ -1,1 +1,1 @@
-export { getReport, linkReportIssue, listReports, orgOfReport, recordReport, setReportStatus, type ReportStatus } from "./reports.ts";
+export { getReport, linkReportIssue, listReports, openReportCount, orgOfReport, recordReport, setReportStatus, type ReportStatus } from "./reports.ts";

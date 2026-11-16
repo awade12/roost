@@ -18,29 +18,73 @@ export type NavItem = {
   to: string;
   label: string;
   icon: ComponentType;
+  /** Unbuilt sections stay in the nav, dimmed with a "soon" tag, and open a placeholder. */
+  soon?: boolean;
   /** One line for the placeholder page until the feature ships. */
   blurb: string;
+  /** Which sidebar count to show next to it. */
+  badge?: "issues" | "reports";
 };
 
 export const ANALYTICS_NAV: NavItem[] = [
   { to: "/", label: "Overview", icon: OverviewIcon, blurb: "" },
-  { to: "/events", label: "Events", icon: EventsIcon, blurb: "Browse and filter every event your games send." },
-  { to: "/retention", label: "Retention", icon: RetentionIcon, blurb: "D1, D7 and D30 cohorts by install day and build." },
-  { to: "/funnels", label: "Funnels", icon: FunnelIcon, blurb: "See where players drop off between any events." },
-  { to: "/players", label: "Players", icon: PlayersIcon, blurb: "Look up one player's sessions, events and crashes." },
+  {
+    to: "/events",
+    label: "Events",
+    icon: EventsIcon,
+    soon: true,
+    blurb: "Browse and filter every event your games send.",
+  },
+  {
+    to: "/retention",
+    label: "Retention",
+    icon: RetentionIcon,
+    soon: true,
+    blurb: "D1, D7 and D30 cohorts by install day and build.",
+  },
+  {
+    to: "/funnels",
+    label: "Funnels",
+    icon: FunnelIcon,
+    soon: true,
+    blurb: "See where players drop off between any events.",
+  },
+  {
+    to: "/players",
+    label: "Players",
+    icon: PlayersIcon,
+    soon: true,
+    blurb: "Look up one player's sessions, events and crashes.",
+  },
 ];
 
 export const OPERATE_NAV: NavItem[] = [
-  { to: "/issues", label: "Issues", icon: IssuesIcon, blurb: "Crashes and errors grouped by cause, with AI triage." },
+  { to: "/issues", label: "Issues", icon: IssuesIcon, blurb: "", badge: "issues" },
   { to: "/alerts", label: "Alerts", icon: AlertsIcon, blurb: "" },
-  { to: "/reports", label: "Player reports", icon: ReportsIcon, blurb: "Bug reports players send from inside your games." },
-  { to: "/ai", label: "AI proxy", icon: AiIcon, blurb: "Prompt templates, models, spend and limits for OpenRouter." },
-  { to: "/config", label: "Config & flags", icon: ConfigIcon, blurb: "Change values and roll out features without an app update." },
-  { to: "/updates", label: "OTA updates", icon: UpdatesIcon, blurb: "Ship Expo updates to players, with rollouts and rollback." },
+  { to: "/reports", label: "Player reports", icon: ReportsIcon, blurb: "", badge: "reports" },
+  { to: "/ai", label: "AI proxy", icon: AiIcon, blurb: "" },
+  {
+    to: "/config",
+    label: "Config & flags",
+    icon: ConfigIcon,
+    soon: true,
+    blurb: "Change values and roll out features without an app update.",
+  },
+  {
+    to: "/updates",
+    label: "OTA updates",
+    icon: UpdatesIcon,
+    soon: true,
+    blurb: "Ship Expo updates to players, with rollouts and rollback.",
+  },
 ];
 
-export const SETTINGS_NAV: NavItem[] = [
-  { to: "/settings", label: "Settings", icon: SettingsIcon, blurb: "" },
-];
+/** Reached from the sidebar footer, not the nav list. */
+export const SETTINGS_ITEM: NavItem = {
+  to: "/settings",
+  label: "Settings",
+  icon: SettingsIcon,
+  blurb: "",
+};
 
-export const ALL_NAV = [...ANALYTICS_NAV, ...OPERATE_NAV, ...SETTINGS_NAV];
+export const ALL_NAV = [...ANALYTICS_NAV, ...OPERATE_NAV, SETTINGS_ITEM];

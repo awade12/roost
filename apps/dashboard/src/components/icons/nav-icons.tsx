@@ -33,7 +33,7 @@ export const EventsIcon = () => (
 );
 export const RetentionIcon = () => (
   <Icon>
-    <path d="M2.5 13.5V3M2.5 13.5h11M5.5 11V7M8.5 11V5M11.5 11V8.5" />
+    <path d="M2.5 2.5v11h11M4.8 4.5c1.2 4.2 3.8 6.6 8.2 7" />
   </Icon>
 );
 export const FunnelIcon = () => (
@@ -56,8 +56,8 @@ export const IssuesIcon = () => (
 );
 export const ReportsIcon = () => (
   <Icon>
-    <path d="M3 2.5h7l3 3v8H3z" />
-    <path d="M5.5 8.5h5M5.5 11h3" />
+    <path d="M2.5 3.5h11v7.5H7.2l-3 2.5v-2.5H2.5z" />
+    <path d="M6.5 9V5.5h3.2l-.8 1 .8 1H6.5" strokeWidth="1.1" />
   </Icon>
 );
 export const AiIcon = () => (
@@ -73,12 +73,12 @@ export const ConfigIcon = () => (
 );
 export const UpdatesIcon = () => (
   <Icon>
-    <path d="M8 13V3M4 7l4-4 4 4" />
+    <path d="M8 10V2.5M5 5.5l3-3 3 3M2.5 9.5v4h11v-4" />
   </Icon>
 );
 export const SignOutIcon = () => (
   <Icon>
-    <path d="M6 13.5H3.5v-11H6M10 11l3-3-3-3M13 8H6" />
+    <path d="M9.5 2.5h-6v11h6M7 8h7M11.5 5.5L14 8l-2.5 2.5" />
   </Icon>
 );
 export const KeyIcon = () => (
@@ -90,14 +90,15 @@ export const KeyIcon = () => (
 
 export const AlertsIcon = () => (
   <Icon>
-    <path d="M4 11.5V7.5a4 4 0 0 1 8 0v4l1 1.2H3z" />
-    <path d="M6.6 14a1.5 1.5 0 0 0 2.8 0" />
+    <path d="M4 11V7.5a4 4 0 0 1 8 0V11l1.2 1.5H2.8z" />
+    <path d="M6.6 14.2h2.8" />
   </Icon>
 );
 
 export const SettingsIcon = () => (
   <Icon>
-    <circle cx="8" cy="8" r="2" />
-    <path d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M3.6 12.4l1.1-1.1M11.3 4.7l1.1-1.1" />
+    <circle cx="8" cy="8" r="2.2" />
+    <circle cx="8" cy="8" r="4.6" />
+    <path d="M8 1.5v1.9M8 12.6v1.9M1.5 8h1.9M12.6 8h1.9M3.4 3.4l1.3 1.3M11.3 11.3l1.3 1.3M3.4 12.6l1.3-1.3M11.3 4.7l1.3-1.3" />
   </Icon>
 );

@@ -1,5 +1,5 @@
 import { environments, games, issueActivity, issues, type Db } from "@roost/db";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 
 export type IssueStatus = "unresolved" | "resolved" | "ignored";
 
@@ -58,4 +58,22 @@ export async function ownerOfIssue(db: Db, id: string): Promise<{ orgId: string;
     .where(eq(issues.id, id))
     .limit(1);
   return row ?? null;
+}
+
+const NEW_FOR_MS = 7 * 86_400_000;
+
+/**
+ * For the sidebar badge: unresolved issues that regressed, and ones first seen in the
+ * last 7 days (not counting regressed ones twice).
+ */
+export async function issueBadgeCounts(db: Db, environmentId: string, now = new Date()) {
+  const since = new Date(now.getTime() - NEW_FOR_MS);
+  const [row] = await db
+    .select({
+      regressed: sql<number>`count(*) filter (where ${issues.regressedAt} is not null)`,
+      fresh: sql<number>`count(*) filter (where ${issues.regressedAt} is null and ${issues.firstSeenAt} >= ${since})`,
+    })
+    .from(issues)
+    .where(and(eq(issues.environmentId, environmentId), eq(issues.status, "unresolved")));
+  return { regressed: Number(row?.regressed ?? 0), new: Number(row?.fresh ?? 0) };
 }

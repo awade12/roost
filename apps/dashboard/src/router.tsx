@@ -50,10 +50,9 @@ const alertsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/alert
 const aiRoute = createRoute({ getParentRoute: () => rootRoute, path: "/ai", component: AiPage });
 const issuesRoute = createRoute({ getParentRoute: () => rootRoute, path: "/issues", component: IssuesPage });
 const issueRoute = createRoute({ getParentRoute: () => rootRoute, path: "/issues/$issueId", component: IssuePage });
-const BUILT = new Set(["/", "/settings", "/ai", "/issues", "/alerts", "/reports"]);
 
 // Every other nav section gets a placeholder until it is built.
-const placeholderRoutes = ALL_NAV.filter((item) => !BUILT.has(item.to)).map((item) =>
+const placeholderRoutes = ALL_NAV.filter((item) => item.soon).map((item) =>
   createRoute({
     getParentRoute: () => rootRoute,
     path: item.to,

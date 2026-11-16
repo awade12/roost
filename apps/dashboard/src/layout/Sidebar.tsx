@@ -1,73 +1,50 @@
-import { Link } from "@tanstack/react-router";
-import { SignOutIcon } from "../components/icons/nav-icons.tsx";
 import { Logo } from "../components/ui/index.ts";
-import { useMe, useSignOut } from "../features/session/index.ts";
-import { ANALYTICS_NAV, OPERATE_NAV, SETTINGS_NAV, type NavItem } from "./nav.ts";
+import { useNavCounts } from "../features/issues/index.ts";
+import { useCurrentOrg, useEnvironment } from "../features/studio/index.ts";
+import { ANALYTICS_NAV, OPERATE_NAV, type NavItem } from "./nav.ts";
+import { GameSwitcher } from "./sidebar/GameSwitcher.tsx";
+import { NavRow, type Counts } from "./sidebar/NavRow.tsx";
+import { SidebarFooter } from "./sidebar/SidebarFooter.tsx";
 
-function NavLink({ item }: { item: NavItem }) {
-  const Icon = item.icon;
+function Section({
+  title,
+  items,
+  counts,
+  grow,
+}: {
+  title: string;
+  items: NavItem[];
+  counts: Counts | undefined;
+  grow?: boolean;
+}) {
   return (
-    <Link
-      to={item.to}
-      activeOptions={{ exact: item.to === "/", includeSearch: false }}
-      className="flex h-7 items-center gap-2 rounded-md px-2 text-muted transition-colors hover:bg-hover hover:text-fg"
-      activeProps={{ className: "bg-hover !text-fg font-medium" }}
+    <nav
+      aria-label={title}
+      className={grow ? "flex flex-1 flex-col gap-px" : "flex flex-col gap-px"}
     >
-      <Icon />
-      <span>{item.label}</span>
-    </Link>
-  );
-}
-
-function Account() {
-  const me = useMe();
-  const signOut = useSignOut();
-  const email = me.data?.email ?? "";
-  return (
-    <div className="flex items-center gap-2 border-t border-border px-2 pt-3">
-      <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-border text-[11px] font-medium uppercase">
-        {email.charAt(0)}
-      </span>
-      <span className="min-w-0 flex-1 truncate text-xs text-muted">{email}</span>
-      <button
-        className="rounded p-1 text-muted hover:bg-hover hover:text-fg disabled:opacity-50"
-        title="Sign out"
-        aria-label="Sign out"
-        disabled={signOut.isPending}
-        onClick={() => signOut.mutate()}
-      >
-        <SignOutIcon />
-      </button>
-    </div>
+      <span className="px-2 py-1.5 text-xs font-medium text-muted">{title}</span>
+      {items.map((item) => (
+        <NavRow key={item.to} item={item} counts={counts} />
+      ))}
+    </nav>
   );
 }
 
 export function Sidebar() {
-  const me = useMe();
-  const org = me.data?.orgs[0];
+  const org = useCurrentOrg();
+  const { selected } = useEnvironment();
+  const counts = useNavCounts(selected?.env.id).data;
   return (
-    <aside className="flex w-58 shrink-0 flex-col gap-4 border-r border-border bg-panel px-2.5 py-3">
-      <div className="flex flex-col gap-1 px-2 py-1.5">
-        <Logo height={18} className="text-fg" />
-        {org && <span className="truncate text-xs text-muted">{org.name}</span>}
+    <aside className="flex w-58 shrink-0 flex-col gap-3 border-r border-border bg-panel px-2.5 pt-4 pb-2.5">
+      <div className="flex h-6 items-center gap-2 px-2">
+        <Logo height={18} className="shrink-0 text-fg" />
+        <span className="text-[13px] text-faint">/</span>
+        <span className="truncate text-xs text-muted">{org?.name}</span>
       </div>
-      <nav className="flex flex-col gap-px">
-        {ANALYTICS_NAV.map((item) => (
-          <NavLink key={item.to} item={item} />
-        ))}
-      </nav>
-      <nav className="flex flex-1 flex-col gap-px">
-        <span className="px-2 pb-1.5 text-xs font-medium text-muted">Operate</span>
-        {OPERATE_NAV.map((item) => (
-          <NavLink key={item.to} item={item} />
-        ))}
-      </nav>
-      <nav className="flex flex-col gap-px">
-        {SETTINGS_NAV.map((item) => (
-          <NavLink key={item.to} item={item} />
-        ))}
-      </nav>
-      <Account />
+      <GameSwitcher />
+      <Section title="Analytics" items={ANALYTICS_NAV} counts={counts} />
+      <Section title="Operate" items={OPERATE_NAV} counts={counts} grow />
+      <SidebarFooter />
     </aside>
   );
 }

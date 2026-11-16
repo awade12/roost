@@ -10,6 +10,8 @@ Rules: see "Changelog" in `SPEC.md`.
 ## [Unreleased]
 
 ### Added
+- **dashboard** Redesigned sidebar (option C in Paper): the game switcher and environment tabs sit at the top under the wordmark, unbuilt sections are dimmed with a "soon" tag, Issues shows new and regressed counts and Player reports shows open ones, and the footer has your account, Settings and sign out. The active page is a quiet fill, not an accent bar.
+- **api** `GET /admin/environments/:environmentId/nav-counts` for the sidebar badges.
 - **api** Player reports: `POST /v1/reports` (a player's message, category, optional email, tags, contexts, extra, breadcrumbs) and `PUT /v1/reports/:reportId/attachments/:attachmentId` for screenshots and saves. Additive to `/v1`; retries are stored once.
 - **api** Admin: list reports per environment (open/closed), report detail with files, close/reopen, and link a report to an issue in the same environment.
 - **dashboard** Player reports page: open/closed list, and a report page with the player's message, screenshots shown inline, file downloads, device, tags, contexts and what the player did before reporting. Copy the player's email when they shared one.
@@ -60,6 +62,7 @@ Rules: see "Changelog" in `SPEC.md`.
 - **docs** Product spec (`SPEC.md`): modules, project structure, code rules, changelog rules.
 
 ### Changed
+- **dashboard** The game and environment picker moved from the header into the sidebar; the header shows game / page.
 - **api** The `/v1` rate limit is now per key and set per game (default 120 a minute, as before) instead of fixed. Key lookups are cached for 30 seconds; revoking a key still takes effect at once on the same server.
 
 ### Fixed

@@ -1,6 +1,6 @@
 import type { PlayerReportBody } from "@roost/contracts";
 import { environments, games, issues, playerReports, type Db } from "@roost/db";
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 
 export type ReportStatus = "open" | "closed";
 
@@ -93,4 +93,13 @@ export async function orgOfReport(db: Db, id: string): Promise<string | null> {
     .where(eq(playerReports.id, id))
     .limit(1);
   return row?.orgId ?? null;
+}
+
+/** For the sidebar badge. */
+export async function openReportCount(db: Db, environmentId: string): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(playerReports)
+    .where(and(eq(playerReports.environmentId, environmentId), eq(playerReports.status, "open")));
+  return row?.n ?? 0;
 }

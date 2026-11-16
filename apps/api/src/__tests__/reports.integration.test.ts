@@ -93,6 +93,12 @@ describe.skipIf(!ready)("player reports (integration)", () => {
     expect(new Uint8Array(await file.arrayBuffer())).toEqual(new Uint8Array([137, 80, 78, 71]));
   });
 
+  it("counts open reports for the sidebar badge", async () => {
+    const counts = await json<{ reports: { open: number }; issues: { new: number; regressed: number } }>(admin("GET", `/environments/${studio.envId}/nav-counts`));
+    expect(counts.reports.open).toBe(1);
+    expect(counts.issues).toEqual({ new: 0, regressed: 0 });
+  });
+
   it("closes reports and only links issues from the same environment", async () => {
     expect((await admin("PATCH", `/reports/${reportId}`, { status: "closed" })).status).toBe(200);
     const open = await json<{ reports: unknown[] }>(admin("GET", `/environments/${studio.envId}/reports`));
