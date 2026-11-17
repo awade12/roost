@@ -1,0 +1,14 @@
+# For a server that already runs a reverse proxy on 80/443 (Caddy, nginx, Traefik…).
+# Roost's Caddy then serves plain HTTP on localhost only, and your proxy terminates HTTPS:
+#   docker compose --env-file .env -f infra/docker-compose.yml -f infra/docker-compose.behind-proxy.yml up -d --build
+# and point your proxy at 127.0.0.1:${ROOST_HTTP_PORT:-8790}. See DEPLOY.md.
+services:
+  caddy:
+    environment:
+      # A port instead of a domain: no certificate, HTTP only.
+      ROOST_DOMAIN: ":80"
+      # Your proxy reaches this container from the Docker network's private address; trust it
+      # so the player's IP in X-Forwarded-For survives (rate limits key on it).
+      ROOST_TRUSTED_PROXIES: private_ranges
+    ports: !override
+      - "127.0.0.1:${ROOST_HTTP_PORT:-8790}:80"

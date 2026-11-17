@@ -1,4 +1,11 @@
 # One origin: dashboard at /, API at /v1, /admin, /health and /sdk (SDK downloads).
+# Behind another proxy, ROOST_TRUSTED_PROXIES lets its X-Forwarded-For (the player's IP) through.
+{
+	servers {
+		trusted_proxies static {$ROOST_TRUSTED_PROXIES:127.0.0.1/32}
+	}
+}
+
 {$ROOST_DOMAIN} {
 	encode zstd gzip
 

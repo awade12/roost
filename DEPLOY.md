@@ -164,6 +164,30 @@ and their events line up. The restore checks that the dump exists before droppin
 On a new server: set up `.env` with the **same** `AUTH_SECRET` and `S3_*` values,
 `roost up -d postgres clickhouse s3`, then the restore commands above, then `roost up -d`.
 
+## Behind an existing reverse proxy
+
+If the server already runs Caddy, nginx or Traefik on ports 80 and 443 for other sites, keep it
+and add `infra/docker-compose.behind-proxy.yml` to every compose command (or to the `roost` alias):
+
+```bash
+docker compose --env-file .env -f infra/docker-compose.yml -f infra/docker-compose.behind-proxy.yml up -d --build
+```
+
+Roost's own Caddy then serves plain HTTP on `127.0.0.1:8790` only (`ROOST_HTTP_PORT` changes it),
+and trusts `X-Forwarded-For` from private addresses, so rate limits still see each player's IP.
+Point your proxy's site at it, for example in a host Caddyfile:
+
+```
+roost.example.com {
+	reverse_proxy 127.0.0.1:8790
+}
+```
+
+Your proxy must set `X-Forwarded-For` to the client address (Caddy and Traefik do by default; for
+nginx add `proxy_set_header X-Forwarded-For $remote_addr;`) and allow large bodies (crash dumps and
+debug files: `client_max_body_size 200m;` in nginx). Behind Cloudflare, use **DNS only** for this
+record, or the IP every request carries is Cloudflare's.
+
 ## Scaling notes
 
 - **API replicas** can scale: `roost up -d --scale api=2`. Caddy finds every `api` container and

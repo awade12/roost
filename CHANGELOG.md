@@ -10,6 +10,7 @@ Rules: see "Changelog" in `SPEC.md`.
 ## [Unreleased]
 
 ### Added
+- **infra** `infra/docker-compose.behind-proxy.yml` runs Roost on a server that already has a reverse proxy on 80/443: Roost's Caddy serves HTTP on `127.0.0.1:8790` and keeps the player's IP from `X-Forwarded-For` (`ROOST_TRUSTED_PROXIES`). See DEPLOY.md.
 - **infra** The API can run as several replicas (`roost up -d --scale api=2`): Caddy now finds every `api` container and round-robins between them.
 - **api** The API applies pending Postgres and ClickHouse migrations on start, before it accepts requests, so upgrading is `git pull` and `docker compose up -d --build`. A Postgres advisory lock keeps two replicas from migrating at once. Turn it off with `MIGRATE_ON_START=false`; `pnpm db:migrate` still works.
 - **infra** Daily backups: a new `backup` service dumps Postgres (`pg_dump`, gzip) and backs up ClickHouse (`BACKUP DATABASE … TO S3`) into `s3://$S3_BUCKET/$BACKUP_PREFIX/` at `BACKUP_HOUR` UTC. `roost-backup list` and `restore postgres|clickhouse <stamp>` bring them back. Old backups are kept until an S3 lifecycle rule expires them.
