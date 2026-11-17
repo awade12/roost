@@ -4,7 +4,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · [SemVer](htt
 
 ## [Unreleased]
 
+### Fixed
+- **sdk-js** Works on Hermes (React Native) without a polyfill. The client used `crypto.randomUUID()`, which Hermes doesn't have, so `new Roost()` threw at start-up and no events were sent. It now falls back to `crypto.getRandomValues`, then `Math.random`.
+
 ### Added
+- **sdk-js** `uuid()`: a v4 UUID that works on every engine, for things like a per-install player id.
 - **sdk-js** Ships as a standalone package with no dependencies (own wire types, checked against the API's contracts at compile time). Install from your Roost server: `npm install <roost>/sdk/js/latest.tgz`.
 - **sdk-js** `roost.ai(template, vars, { messages, model, maxTokens, temperature })` for conversation history and per-call options, and `roost.aiStream(template, vars, { onDelta })` to show text as it's written.
 - **sdk-js** Flags: `roost.flags.getBoolean / getString / getNumber / getObject(key, default)`, refreshed at start and every 5 minutes (`configRefreshMs`), kept in storage for offline launches, with `onChange`. `roost.openFeatureProvider()` plugs Roost into OpenFeature.

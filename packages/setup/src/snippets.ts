@@ -58,7 +58,7 @@ export function init(s: SetupInput): string {
   const lines = [
     `// src/roost.ts — one Roost client for the whole game.`,
     expo ? `import AsyncStorage from "@react-native-async-storage/async-storage";\nimport * as Application from "expo-application";\nimport { Platform } from "react-native";` : "",
-    `import { Roost } from "@roost/sdk";`,
+    `import { Roost, uuid } from "@roost/sdk";`,
     ``,
     `const storage = ${expo ? "AsyncStorage" : "localStorage"};`,
     ``,
@@ -66,7 +66,7 @@ export function init(s: SetupInput): string {
     `async function playerId(): Promise<string> {`,
     `  const saved = await storage.getItem("roost.player");`,
     `  if (saved) return saved;`,
-    `  const id = crypto.randomUUID();`,
+    `  const id = uuid(); // not crypto.randomUUID(): Hermes (React Native) has none`,
     `  await storage.setItem("roost.player", id);`,
     `  return id;`,
     `}`,

@@ -6,12 +6,13 @@ import { createProvider, FlagStore } from "./flags/index.ts";
 import { EventQueue } from "./queue.ts";
 import { sendReport, type ReportInput, type ReportResult } from "./report.ts";
 import type { RoostOptions } from "./types.ts";
+import { uuid } from "./ids/index.ts";
 
 const SDK_VERSION = "js/0.3.0";
 
 export class Roost {
   private readonly queue: EventQueue;
-  private readonly sessionId = crypto.randomUUID();
+  private readonly sessionId = uuid();
   private readonly crashes: CrashReporter;
   private readonly scope: Scope;
   private flushing = false;
@@ -102,7 +103,7 @@ export class Roost {
     const ts = new Date().toISOString();
     this.scope.addBreadcrumb({ name, ts, category: "event", ...(props ? { props } : {}) });
     this.queue.push({
-      id: crypto.randomUUID(),
+      id: uuid(),
       name,
       ts,
       sessionId: this.sessionId,

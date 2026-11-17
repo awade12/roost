@@ -118,6 +118,15 @@ export function verify(s: SetupInput): string {
 1. Run the game and play for a minute.
 2. In the Roost dashboard (${s.game} · ${s.environment}): **Events** shows your events within ~10 s.
 3. Trigger a test error once (${rust(s) ? "`roost.capture_message(\"Roost test\", Capture::new())`" : '`roost?.captureMessage("Roost test")`'}) and see it under **Issues**.
-4. Remove the test code.`;
+4. Remove the test code.
+
+**If nothing arrives:** look for a Roost warning in the app's logs first. Then rule out the key and
+server with one request from your computer; \`202\` means they're fine and the problem is in the app:
+
+\`\`\`bash
+curl -s -o /dev/null -w "%{http_code}\\n" -X POST ${s.endpoint}/v1/events \\
+  -H "x-roost-key: <client key>" -H "content-type: application/json" \\
+  -d '{"context":{"build":"dev","platform":"web","sdk":"curl"},"events":[{"id":"00000000-0000-4000-8000-000000000001","name":"roost_setup_check","ts":"'"$(date -u +%FT%TZ)"'","sessionId":"setup-check","playerId":"setup-check"}]}'
+\`\`\``;
 }
 

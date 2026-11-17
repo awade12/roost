@@ -1,6 +1,7 @@
 import type { PlayerReport } from "./wire/index.ts";
 import { fromBase64, prepareFiles, refsFor, type Attachment, type Scope } from "./crash/index.ts";
 import type { RoostOptions } from "./types.ts";
+import { uuid } from "./ids/index.ts";
 
 export type ReportInput = {
   /** What the player wrote. Required, up to 4000 characters. */
@@ -30,7 +31,7 @@ export async function sendReport(opts: RoostOptions, sessionId: string, sdk: str
     const extraFiles = input.includeAttachments === false ? [] : ((await opts.getAttachments?.()) ?? []);
     const files = prepareFiles([...(input.attachments ?? []), ...extraFiles]);
     const report: PlayerReport = {
-      id: crypto.randomUUID(),
+      id: uuid(),
       ts: new Date().toISOString(),
       playerId: opts.playerId,
       sessionId,

@@ -2,6 +2,7 @@ import type { Crash } from "../wire/index.ts";
 import type { QueueStorage, RoostOptions } from "../types.ts";
 import type { Scope } from "./scope.ts";
 import { deliver, prepareFiles, refsFor, type Attachment, type PendingReport } from "./transport.ts";
+import { uuid } from "../ids/index.ts";
 
 const STORAGE_KEY = "roost:crashes";
 const MAX_PENDING = 20;
@@ -48,7 +49,7 @@ export class CrashReporter {
   private build(base: Pick<Crash, "kind" | "type" | "message" | "stack">, o: CaptureOptions, files: ReturnType<typeof prepareFiles>): Crash {
     return {
       ...base,
-      id: crypto.randomUUID(),
+      id: uuid(),
       ts: new Date().toISOString(),
       sessionId: this.sessionId,
       playerId: this.opts.playerId,

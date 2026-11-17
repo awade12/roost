@@ -23,6 +23,9 @@ function header(s: SetupInput): string {
 - **Never** put a server key (\`rk_server_…\`) in the game or the repo. Only CI may use one, as a secret.
 - Telemetry must never break or slow the game: don't await Roost on the main path, and don't let its
   errors reach the player. The SDK already never throws from tracking or crash reporting.
+- But never hide a Roost failure from developers: if you wrap the start in \`try/catch\`, log the
+  error (\`console.warn\` in dev builds, \`eprintln!\` in Rust). A silent catch once hid a start-up
+  error, and no events arrived with nothing in the logs to say why.
 - Player ids are random per install. Never use names, emails or platform account ids.
 - Event names are snake_case; keep props small and free of personal data.`;
 }

@@ -25,10 +25,12 @@ npm install "https://<roost>/sdk/js/latest.tgz?key=rk_client_…"
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Roost } from "@roost/sdk";
 
+// Works on Hermes (React Native) as is: no crypto polyfill needed. For ids, use the SDK's
+// uuid() rather than crypto.randomUUID(), which Hermes lacks.
 export const roost = new Roost({
   endpoint: "https://roost.example.com",
   clientKey: "rk_client_…",
-  playerId: "player-123",                  // your own stable id for this player
+  playerId: "player-123",                  // a stable id per install: uuid() once, then keep it
   context: { build: "1.4.2", platform: "ios", osVersion: "18.1", locale: "en-GB" },
   storage: AsyncStorage,                   // localStorage on web; memory only if left out
 });

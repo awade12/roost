@@ -1,3 +1,4 @@
+import { EventBatchSchema } from "@roost/contracts";
 import { describe, expect, it } from "vitest";
 import { ALL_FEATURES, buildSetup, type SetupInput } from "../index.ts";
 
@@ -46,5 +47,20 @@ describe("setup files", () => {
     const config = JSON.parse(buildSetup({ ...base, features: { ...ALL_FEATURES, ai: false } })[1]?.content ?? "{}") as { templates: object; flags: object };
     expect(config.templates).toEqual({});
     expect(Object.keys(config.flags)).toEqual(["new_shop"]);
+  });
+
+  // Regression: crypto.randomUUID() doesn't exist on Hermes, so the Expo start code must not use it.
+  it("makes the player id with the SDK's uuid(), which works on Hermes", () => {
+    const md = guide({ platform: "expo" });
+    expect(md).toContain("import { Roost, uuid } from \"@roost/sdk\"");
+    expect(md).not.toMatch(/=\s*crypto\.randomUUID\(\)/);
+  });
+
+  it("gives a troubleshooting request the events API accepts", () => {
+    const line = guide({}).split("\n").find((l) => l.includes("roost_setup_check")) ?? "";
+    const json = line
+      .slice(line.indexOf("-d '") + 4, line.lastIndexOf("'"))
+      .replace(`'"$(date -u +%FT%TZ)"'`, "2026-01-01T00:00:00Z");
+    expect(EventBatchSchema.safeParse(JSON.parse(json)).success).toBe(true);
   });
 });

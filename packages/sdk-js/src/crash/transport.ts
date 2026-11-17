@@ -1,6 +1,7 @@
 import type { Crash } from "../wire/index.ts";
 import { MAX_ATTACHMENT_BYTES, MAX_ATTACHMENTS } from "@roost/contracts/limits";
 import type { RoostOptions } from "../types.ts";
+import { uuid } from "../ids/index.ts";
 
 /** A file to send with a report, e.g. the player's save. */
 export type Attachment = { name: string; data: string | Uint8Array; contentType?: string };
@@ -20,7 +21,7 @@ export function prepareFiles(attachments: Attachment[]): PendingFile[] {
     .filter(({ bytes }) => bytes.byteLength <= MAX_ATTACHMENT_BYTES)
     .slice(0, MAX_ATTACHMENTS)
     .map(({ a, bytes }) => ({
-      id: crypto.randomUUID(),
+      id: uuid(),
       name: a.name.slice(0, 128),
       contentType: a.contentType ?? (typeof a.data === "string" ? "text/plain" : "application/octet-stream"),
       base64: toBase64(bytes),
