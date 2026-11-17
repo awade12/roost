@@ -1,0 +1,50 @@
+name: Deploy
+
+# Ships main to the production server once CI passes on it, or on demand from the Actions tab.
+# The server runs infra/deploy.sh (build, back up, swap, health check, roll back on failure).
+#
+# Setup (DEPLOY.md, "Automatic deploys"): repository secret DEPLOY_SSH_KEY, and variables
+# DEPLOY_HOST, DEPLOY_USER and DEPLOY_KNOWN_HOSTS. Without them this workflow skips itself, so
+# forks and fresh clones never try to deploy anywhere.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: Commit to deploy (a hash on main), or main for the latest
+        default: main
+        required: true
+
+# One deploy at a time; a newer push waits for the running one instead of cancelling it mid-swap.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  deploy:
+    if: >-
+      vars.DEPLOY_HOST != '' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'))
+    runs-on: ubuntu-latest
+    # Add required reviewers to this environment in Settings → Environments to approve each deploy.
+    environment: production
+    timeout-minutes: 30
+    steps:
+      - name: Deploy over SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+          TARGET: ${{ vars.DEPLOY_USER || 'roost' }}@${{ vars.DEPLOY_HOST }}
+          COMMIT: ${{ github.event.workflow_run.head_sha || inputs.commit }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # The server's authorized_keys pins this key to infra/deploy.sh; the commit is its only input.
+          ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes "$TARGET" "$COMMIT"

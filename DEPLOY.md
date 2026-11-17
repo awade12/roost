@@ -98,16 +98,25 @@ key and start-up code filled in. Tools that use a server key read `ROOST_ENDPOIN
 ## 5. Upgrading
 
 ```bash
-git pull
-roost up -d --build
+infra/deploy.sh            # latest main
+infra/deploy.sh 1a2b3c4    # or a specific commit
 ```
+
+The script fetches the commit, builds the new images while the old containers keep serving,
+takes a backup (migrations can't be undone), swaps the containers and waits until they're
+healthy. If the build or the health check fails, it goes back to the previous commit. Each run is
+logged to `roost-deploys.log` next to the checkout. If you use extra compose files (for example
+behind a proxy), list them in `.env` so the script uses them too:
+`COMPOSE_FILE=infra/docker-compose.yml:infra/docker-compose.behind-proxy.yml`.
+
+By hand it is `git pull` and `roost up -d --build`, without the backup and the rollback.
 
 Migrations run by themselves when the new API starts. They're append-only, and a Postgres
 advisory lock makes sure only one process applies them at a time. Read `CHANGELOG.md` first for
 anything marked **BREAKING**. To apply migrations yourself instead, set `MIGRATE_ON_START=false`
 and run `pnpm db:migrate` from a checkout that can reach the databases.
 
-Old images pile up; `docker image prune` now and then.
+`infra/deploy.sh` removes old images; by hand, `docker image prune` now and then.
 
 ## 6. Backups
 
@@ -163,6 +172,36 @@ The Postgres and ClickHouse stamps of one run match; restore both from the same 
 and their events line up. The restore checks that the dump exists before dropping anything.
 On a new server: set up `.env` with the **same** `AUTH_SECRET` and `S3_*` values,
 `roost up -d postgres clickhouse s3`, then the restore commands above, then `roost up -d`.
+
+## Automatic deploys
+
+`.github/workflows/deploy.yml` runs `infra/deploy.sh` on the server whenever CI passes on `main`,
+and from the Actions tab (Deploy → Run workflow) for any commit on `main`. It skips itself until
+it is set up, so forks never deploy anywhere.
+
+1. On your computer, make a key only for CI: `ssh-keygen -t ed25519 -N "" -C roost-ci -f roost-ci`.
+2. On the server, let that key run the deploy script and nothing else. Add one line to the deploy
+   user's `~/.ssh/authorized_keys`:
+
+   ```
+   command="/home/roost/roost/infra/deploy.sh",no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty ssh-ed25519 AAAA… roost-ci
+   ```
+
+3. In the GitHub repository, add the private key as a secret and the server as variables:
+
+   ```bash
+   gh secret set DEPLOY_SSH_KEY < roost-ci
+   gh variable set DEPLOY_HOST --body "203.0.113.10"
+   gh variable set DEPLOY_USER --body "roost"
+   gh variable set DEPLOY_KNOWN_HOSTS --body "$(ssh-keyscan -t ed25519 203.0.113.10 2>/dev/null)"
+   ```
+
+   Then delete the local `roost-ci` files.
+4. Optional: require an approval for each deploy in Settings → Environments → `production` →
+   Required reviewers.
+
+A new API takes a few seconds to start; meanwhile Caddy holds requests for up to 5 seconds
+instead of failing them. Run two API replicas if even that matters.
 
 ## Behind an existing reverse proxy
 
