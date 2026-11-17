@@ -21,6 +21,9 @@ pub struct Fake {
     pub status: AtomicU16,
     pub offline: AtomicBool,
     pub ai_body: Mutex<String>,
+    /// Body for GET /v1/config; empty answers 304.
+    pub config_body: Mutex<String>,
+    pub gets: Mutex<Vec<(String, Option<String>)>>,
 }
 
 impl Fake {
@@ -31,6 +34,8 @@ impl Fake {
             status: AtomicU16::new(202),
             offline: AtomicBool::new(false),
             ai_body: Mutex::new(String::new()),
+            config_body: Mutex::new(String::new()),
+            gets: Mutex::new(Vec::new()),
         })
     }
 
@@ -84,6 +89,21 @@ impl Fake {
 }
 
 impl Transport for Fake {
+    fn get(&self, path: &str, if_none_match: Option<&str>) -> Result<Reply, String> {
+        if self.offline.load(Ordering::SeqCst) {
+            return Err("offline".to_owned());
+        }
+        self.gets
+            .lock()
+            .unwrap()
+            .push((path.to_owned(), if_none_match.map(str::to_owned)));
+        let body = self.config_body.lock().unwrap().clone();
+        Ok(Reply {
+            status: if body.is_empty() { 304 } else { 200 },
+            body,
+        })
+    }
+
     fn post_json(&self, path: &str, body: &str) -> Result<Reply, String> {
         let reply = self.reply(path);
         if reply.is_ok() {

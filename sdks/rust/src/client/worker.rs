@@ -14,6 +14,7 @@ pub(crate) enum Msg {
     Crash(Box<PendingCrash>),
     Flush(Option<SyncSender<()>>),
     Stop(SyncSender<()>),
+    RefreshFlags(SyncSender<bool>),
 }
 
 /// All network I/O happens on this one thread, so the game never waits on it.
@@ -24,7 +25,32 @@ pub(crate) fn spawn(
 ) -> std::io::Result<JoinHandle<()>> {
     thread::Builder::new()
         .name("roost-sdk".to_owned())
-        .spawn(move || Worker { shared, pending }.run(&rx))
+        .spawn(move || {
+            #[cfg(feature = "native-crashes")]
+            upload_minidumps(&shared);
+            Worker { shared, pending }.run(&rx);
+        })
+}
+
+/// Hard crashes from earlier runs. Once per launch: a dump that fails waits for the next one.
+#[cfg(feature = "native-crashes")]
+fn upload_minidumps(shared: &Shared) {
+    let Some(dir) = shared.config.data_dir.as_deref() else {
+        return;
+    };
+    let fallback = crate::native::Fallback {
+        player_id: &shared.config.player_id,
+        context: serde_json::to_value(shared.context()).unwrap_or_default(),
+    };
+    let files = || {
+        shared
+            .config
+            .attachments
+            .as_ref()
+            .map(|f| f())
+            .unwrap_or_default()
+    };
+    crate::native::upload_pending(shared.transport.as_ref(), dir, &fallback, files);
 }
 
 struct Worker {
@@ -36,7 +62,21 @@ impl Worker {
     fn run(mut self, rx: &Receiver<Msg>) {
         let interval = self.shared.config.flush_interval;
         loop {
+            // Flags refresh on the same thread as everything else, so the game never waits on them.
+            if self.shared.flags.due(self.shared.config.config_refresh) {
+                self.shared.flags.refresh(
+                    self.shared.transport.as_ref(),
+                    &self.shared.config.player_id,
+                );
+            }
             match rx.recv_timeout(interval) {
+                Ok(Msg::RefreshFlags(done)) => {
+                    let changed = self.shared.flags.refresh(
+                        self.shared.transport.as_ref(),
+                        &self.shared.config.player_id,
+                    );
+                    let _ = done.send(changed);
+                }
                 Ok(Msg::Crash(p)) => {
                     if self.pending.len() < MAX_PENDING_CRASHES {
                         self.pending.push(*p);

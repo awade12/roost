@@ -56,3 +56,27 @@ export async function orgOfTemplate(db: Db, id: string): Promise<string | null> 
     .limit(1);
   return row?.orgId ?? null;
 }
+
+export type UpsertResult = "created" | "updated" | "unchanged";
+
+const SAME_FIELDS = ["model", "systemPrompt", "userTemplate", "maxTokens", "temperature"] as const;
+
+/**
+ * Create or update by name, for config-as-code. An identical template is left alone, so
+ * pushing the same file on every CI run doesn't bump versions.
+ */
+export async function upsertTemplate(db: Db, gameId: string, input: TemplateInput): Promise<UpsertResult> {
+  const [existing] = await db.select().from(aiTemplates).where(and(eq(aiTemplates.gameId, gameId), eq(aiTemplates.name, input.name))).limit(1);
+  if (!existing) {
+    await createTemplate(db, gameId, input);
+    return "created";
+  }
+  const same = SAME_FIELDS.every((k) => existing[k] === input[k]) && existing.fallbackModels.join(",") === input.fallbackModels.join(",");
+  if (same) return "unchanged";
+  await updateTemplate(db, existing.id, input);
+  return "updated";
+}
+
+export async function deleteTemplateByName(db: Db, gameId: string, name: string): Promise<boolean> {
+  return (await db.delete(aiTemplates).where(and(eq(aiTemplates.gameId, gameId), eq(aiTemplates.name, name))).returning({ id: aiTemplates.id })).length > 0;
+}

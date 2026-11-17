@@ -64,3 +64,20 @@ export function requireKey(db: Db): MiddlewareHandler<{ Variables: KeyVars }> {
     await next();
   };
 }
+
+/**
+ * After requireKey: only server keys (`rk_server_…`) pass. They never ship in a game build, so
+ * they can manage templates and flags, upload debug files, and read data.
+ */
+export function requireServerKey(): MiddlewareHandler<{ Variables: KeyVars }> {
+  return async (c, next) => {
+    if (c.get("keyKind") !== "server") throw new AppError("forbidden", "This needs a server key (rk_server_…), not a client key");
+    await next();
+  };
+}
+
+/** True if `raw` is an unrevoked client or server key of any game (cached like requireKey). */
+export async function isValidKey(db: Db, raw: string): Promise<boolean> {
+  if (!raw.startsWith("rk_")) return false;
+  return (await resolve(db, createHash("sha256").update(raw).digest("hex"))) !== null;
+}

@@ -32,7 +32,7 @@ bug/crash reports, and live-ops. Full design: `SPEC.md`. Read it before big chan
 - Events and other append-only, high-volume data go to ClickHouse; everything else to Postgres.
 - Migrations (both stores) are append-only. Never edit one that has been applied.
 - Slow work goes to the worker, not inline in a request. Exceptions: the AI proxy's live
-  call, and sign-in emails (the raw code must never sit in the job table).
+  call, and sign-in and invite emails (the raw code or token must never sit in the job table).
 
 ## Security
 - Secrets only from env, parsed with Zod at startup (fail fast).

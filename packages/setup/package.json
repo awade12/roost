@@ -1,0 +1,15 @@
+{
+  "name": "@roost/setup",
+  "private": true,
+  "license": "FSL-1.1-ALv2",
+  "type": "module",
+  "description": "Generates ROOST.md (agent instructions) and roost.config.json for a game",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^5.1.0"
+  }
+}

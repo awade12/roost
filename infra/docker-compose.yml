@@ -1,5 +1,20 @@
-# Production on one server. Secrets come from ../.env (never committed).
+# Production on one server. Settings and secrets come from ../.env (never committed).
+# Run from the repo root, passing the same file for ${...} below:
+#   docker compose --env-file .env -f infra/docker-compose.yml up -d --build
+# Guide: DEPLOY.md.
 name: roost
+
+# The API and worker read everything from ../.env; these override the addresses so the
+# containers talk to the bundled Postgres and ClickHouse over the compose network.
+x-app-env: &app-env
+  NODE_ENV: production
+  PORT: "8787" # Caddy proxies to api:8787
+  DATABASE_URL: postgres://${POSTGRES_USER:-roost}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/roost
+  CLICKHOUSE_URL: http://clickhouse:8123
+  CLICKHOUSE_USER: ${CLICKHOUSE_USER:-roost}
+  CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?set CLICKHOUSE_PASSWORD}
+  CLICKHOUSE_DB: roost
+
 services:
   postgres:
     image: postgres:16
@@ -10,7 +25,7 @@ services:
       POSTGRES_DB: roost
     volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U roost"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d roost"]
       interval: 5s
       retries: 10
   clickhouse:
@@ -27,6 +42,8 @@ services:
       test: ["CMD", "wget", "-qO-", "http://localhost:8123/ping"]
       interval: 5s
       retries: 20
+  # Bundled S3 for attachments, crash dumps and backups. To use an external S3 instead,
+  # point S3_ENDPOINT at it; this container then just sits idle.
   s3:
     image: rustfs/rustfs:1.0.6
     restart: unless-stopped
@@ -34,30 +51,70 @@ services:
       RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:?set S3_ACCESS_KEY}
       RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY}
     volumes: [s3data:/data]
+  # Applies Postgres and ClickHouse migrations on start (MIGRATE_ON_START), then serves.
   api:
     build: { context: .., dockerfile: infra/Dockerfile.api }
     restart: unless-stopped
     env_file: ../.env
+    environment:
+      <<: *app-env
     depends_on:
       postgres: { condition: service_healthy }
       clickhouse: { condition: service_healthy }
+      s3: { condition: service_started }
+    # Healthy once migrations are done and the server listens.
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8787/health"]
+      interval: 5s
+      start_period: 60s
+      retries: 10
   worker:
     build: { context: .., dockerfile: infra/Dockerfile.worker }
     restart: unless-stopped
     env_file: ../.env
+    environment:
+      <<: *app-env
     depends_on:
       postgres: { condition: service_healthy }
       clickhouse: { condition: service_healthy }
+      s3: { condition: service_started }
+      # The worker's tables come from the API's startup migrations.
+      api: { condition: service_healthy }
+  # Daily pg_dump + ClickHouse BACKUP into s3://$S3_BUCKET/$BACKUP_PREFIX/. See DEPLOY.md.
+  backup:
+    build: { context: ./backup, dockerfile: Dockerfile.backup }
+    restart: unless-stopped
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-roost}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      PGDATABASE: roost
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-roost}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?set CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DB: roost
+      S3_ENDPOINT: ${S3_ENDPOINT:?set S3_ENDPOINT}
+      S3_BUCKET: ${S3_BUCKET:?set S3_BUCKET}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?set S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      BACKUP_PREFIX: ${BACKUP_PREFIX:-backups}
+      BACKUP_HOUR: ${BACKUP_HOUR:-3}
+    depends_on:
+      postgres: { condition: service_healthy }
+      clickhouse: { condition: service_healthy }
+      s3: { condition: service_started }
   caddy:
     build: { context: .., dockerfile: infra/Dockerfile.caddy }
     restart: unless-stopped
     environment:
       ROOST_DOMAIN: ${ROOST_DOMAIN:?set ROOST_DOMAIN}
-    ports: ["80:80", "443:443"]
-    volumes: [caddydata:/data]
+    ports: ["80:80", "443:443", "443:443/udp"]
+    volumes: [caddydata:/data, caddyconfig:/config]
     depends_on: [api]
 volumes:
   pgdata:
   chdata:
   s3data:
   caddydata:
+  caddyconfig:

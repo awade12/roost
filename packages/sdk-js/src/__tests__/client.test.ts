@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { Roost, RoostAiError } from "../client.ts";
+import { RoostAiError } from "../ai/index.ts";
+import { Roost } from "../client.ts";
 
 function makeClient(status: number) {
   const fetch = vi.fn(async (_url: string | URL | Request, _init?: RequestInit) => new Response(null, { status }));

@@ -1,7 +1,8 @@
 {
   "name": "@roost/sdk",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Roost SDK for Expo (React Native) and web games",
+  "license": "MIT",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
@@ -16,10 +17,12 @@
   },
   "files": [
     "dist",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "LICENSE",
+    "README.md"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --target es2020",
+    "build": "tsup",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

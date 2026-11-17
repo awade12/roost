@@ -1,0 +1,18 @@
+{
+  "name": "@roost/cli",
+  "private": true,
+  "license": "FSL-1.1-ALv2",
+  "type": "module",
+  "description": "roost push / pull: keep AI templates, flags and AI limits in your repo",
+  "bin": {
+    "roost": "src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@roost/contracts": "workspace:*",
+    "@roost/setup": "workspace:*",
+    "zod": "^4.6.7"
+  }
+}

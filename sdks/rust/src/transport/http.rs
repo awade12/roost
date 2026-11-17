@@ -19,6 +19,25 @@ pub trait Transport: Send + Sync {
         content_type: &str,
         bytes: &[u8],
     ) -> Result<Reply, String>;
+
+    /// GET, with an optional If-None-Match. Defaults to unsupported so transports written
+    /// before flags existed keep compiling; flags then just stay at their defaults.
+    fn get(&self, path: &str, if_none_match: Option<&str>) -> Result<Reply, String> {
+        let _ = (path, if_none_match);
+        Err("GET isn't supported by this transport".to_owned())
+    }
+
+    /// POST that reads the answer line by line as it arrives (AI streaming). On a 2xx the body
+    /// goes to `on_line` and the returned body is empty; otherwise the body is returned whole.
+    fn post_stream(
+        &self,
+        path: &str,
+        body: &str,
+        on_line: &mut dyn FnMut(&str),
+    ) -> Result<Reply, String> {
+        let _ = (path, body, on_line);
+        Err("streaming isn't supported by this transport".to_owned())
+    }
 }
 
 /// What to do with a payload after a send attempt.
@@ -61,6 +80,48 @@ impl HttpTransport {
 }
 
 impl Transport for HttpTransport {
+    fn post_stream(
+        &self,
+        path: &str,
+        body: &str,
+        on_line: &mut dyn FnMut(&str),
+    ) -> Result<Reply, String> {
+        use std::io::BufRead;
+        let mut res = self
+            .agent
+            .post(format!("{}{path}", self.endpoint))
+            .header("content-type", "application/json")
+            .header("x-roost-key", &self.client_key)
+            .send(body)
+            .map_err(|e| e.to_string())?;
+        let status = res.status().as_u16();
+        if !(200..300).contains(&status) {
+            return Ok(Reply {
+                status,
+                body: res.body_mut().read_to_string().unwrap_or_default(),
+            });
+        }
+        let reader = std::io::BufReader::new(res.body_mut().as_reader());
+        for line in reader.lines() {
+            on_line(&line.map_err(|e| e.to_string())?);
+        }
+        Ok(Reply {
+            status,
+            body: String::new(),
+        })
+    }
+
+    fn get(&self, path: &str, if_none_match: Option<&str>) -> Result<Reply, String> {
+        let mut req = self
+            .agent
+            .get(format!("{}{path}", self.endpoint))
+            .header("x-roost-key", &self.client_key);
+        if let Some(etag) = if_none_match {
+            req = req.header("if-none-match", etag);
+        }
+        read(req.call())
+    }
+
     fn post_json(&self, path: &str, body: &str) -> Result<Reply, String> {
         let res = self
             .agent

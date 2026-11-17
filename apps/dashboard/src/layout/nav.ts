@@ -32,14 +32,12 @@ export const ANALYTICS_NAV: NavItem[] = [
     to: "/events",
     label: "Events",
     icon: EventsIcon,
-    soon: true,
     blurb: "Browse and filter every event your games send.",
   },
   {
     to: "/retention",
     label: "Retention",
     icon: RetentionIcon,
-    soon: true,
     blurb: "D1, D7 and D30 cohorts by install day and build.",
   },
   {
@@ -53,7 +51,6 @@ export const ANALYTICS_NAV: NavItem[] = [
     to: "/players",
     label: "Players",
     icon: PlayersIcon,
-    soon: true,
     blurb: "Look up one player's sessions, events and crashes.",
   },
 ];
@@ -67,7 +64,6 @@ export const OPERATE_NAV: NavItem[] = [
     to: "/config",
     label: "Config & flags",
     icon: ConfigIcon,
-    soon: true,
     blurb: "Change values and roll out features without an app update.",
   },
   {

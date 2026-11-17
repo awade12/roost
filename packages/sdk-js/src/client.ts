@@ -1,20 +1,13 @@
-import { MAX_EVENTS_PER_BATCH, type AiRunResponse, type ErrorBody } from "@roost/contracts";
+import type { AiRunResponse } from "./wire/index.ts";
+import { MAX_EVENTS_PER_BATCH } from "@roost/contracts/limits";
+import { runAi, streamAi, type AiOptions, type AiVars } from "./ai/index.ts";
 import { CrashReporter, installHandlers, Scope, type BreadcrumbInput, type CaptureOptions } from "./crash/index.ts";
+import { createProvider, FlagStore } from "./flags/index.ts";
 import { EventQueue } from "./queue.ts";
 import { sendReport, type ReportInput, type ReportResult } from "./report.ts";
 import type { RoostOptions } from "./types.ts";
 
 const SDK_VERSION = "js/0.3.0";
-
-/** An AI proxy call failed. `code` is the API error code, e.g. "rate_limited". */
-export class RoostAiError extends Error {
-  constructor(
-    readonly code: string,
-    message: string,
-  ) {
-    super(message);
-  }
-}
 
 export class Roost {
   private readonly queue: EventQueue;
@@ -24,11 +17,15 @@ export class Roost {
   private flushing = false;
   private timer: ReturnType<typeof setInterval> | undefined;
   private uninstall: (() => void) | undefined;
+  private configTimer: ReturnType<typeof setInterval> | undefined;
+  /** Remote config and flags from the dashboard, resolved for this player. */
+  readonly flags: FlagStore;
 
   constructor(private readonly opts: RoostOptions) {
     this.queue = new EventQueue(opts.storage);
     this.scope = new Scope(opts.maxBreadcrumbs);
     this.crashes = new CrashReporter(opts, this.sessionId, this.scope, opts.storage);
+    this.flags = new FlagStore(opts, opts.storage);
   }
 
   /**
@@ -37,7 +34,9 @@ export class Roost {
    * `captureCrashes: false`.
    */
   async start(): Promise<void> {
-    await Promise.all([this.queue.load(), this.crashes.load()]);
+    await Promise.all([this.queue.load(), this.crashes.load(), this.flags.load()]);
+    void this.flags.refresh();
+    this.configTimer = setInterval(() => void this.flags.refresh(), this.opts.configRefreshMs ?? 300_000);
     if (this.opts.captureCrashes !== false) {
       this.uninstall = installHandlers((error, fatal) => void this.captureError(error, { fatal }));
     }
@@ -68,6 +67,11 @@ export class Roost {
    */
   report(input: ReportInput): Promise<ReportResult> {
     return sendReport(this.opts, this.sessionId, SDK_VERSION, this.scope, input);
+  }
+
+  /** An OpenFeature provider over `flags`, for code that already uses OpenFeature. */
+  openFeatureProvider() {
+    return createProvider(this.flags);
   }
 
   /** Tag every later report, e.g. setTag("level", "forest-3"). Searchable in the dashboard. */
@@ -131,25 +135,22 @@ export class Roost {
   }
 
   /**
-   * Runs a prompt template on the Roost AI proxy. Unlike tracking, this throws
-   * on failure (e.g. `rate_limited` when the player's budget is used up) so the
-   * game can show its own fallback line.
+   * Runs a prompt template on the Roost AI proxy. Unlike tracking, this throws on failure
+   * (e.g. `rate_limited` when the player's budget is used up) so the game can show its own
+   * fallback line. Options add conversation history, or pick one of the template's models.
    */
-  async ai(template: string, vars: Record<string, string | number | boolean> = {}): Promise<AiRunResponse> {
-    const res = await (this.opts.fetch ?? fetch)(`${this.opts.endpoint}/v1/ai/run`, {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-roost-key": this.opts.clientKey },
-      body: JSON.stringify({ template, vars, playerId: this.opts.playerId }),
-    });
-    if (!res.ok) {
-      const body = (await res.json().catch(() => null)) as ErrorBody | null;
-      throw new RoostAiError(body?.error.code ?? "internal", body?.error.message ?? `HTTP ${res.status}`);
-    }
-    return (await res.json()) as AiRunResponse;
+  ai(template: string, vars: AiVars = {}, options: AiOptions = {}): Promise<AiRunResponse> {
+    return runAi(this.opts, template, vars, options);
+  }
+
+  /** Like `ai`, but text arrives as it's written: `onDelta` gets each piece (for typewriter dialogue). */
+  aiStream(template: string, vars: AiVars, options: AiOptions & { onDelta: (text: string) => void }): Promise<AiRunResponse> {
+    return streamAi(this.opts, template, vars, options);
   }
 
   async stop(): Promise<void> {
     if (this.timer) clearInterval(this.timer);
+    if (this.configTimer) clearInterval(this.configTimer);
     this.uninstall?.();
     this.track("session_end");
     await this.flush();

@@ -103,3 +103,13 @@ export async function openReportCount(db: Db, environmentId: string): Promise<nu
     .where(and(eq(playerReports.environmentId, environmentId), eq(playerReports.status, "open")));
   return row?.n ?? 0;
 }
+
+/** A player's reports in one environment, newest first. */
+export function reportsForPlayer(db: Db, environmentId: string, playerId: string) {
+  return db
+    .select({ id: playerReports.id, category: playerReports.category, message: playerReports.message, status: playerReports.status, receivedAt: playerReports.receivedAt })
+    .from(playerReports)
+    .where(and(eq(playerReports.environmentId, environmentId), eq(playerReports.playerId, playerId)))
+    .orderBy(desc(playerReports.receivedAt))
+    .limit(50);
+}

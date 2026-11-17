@@ -1,7 +1,7 @@
 import { z } from "zod";
+import { MAX_EVENTS_PER_BATCH } from "./limits.ts";
 
 /** Limits for one POST /v1/events call. Changing these is a /v1 contract change. */
-export const MAX_EVENTS_PER_BATCH = 500;
 
 const propValue = z.union([z.string().max(1024), z.number(), z.boolean(), z.null()]);
 
@@ -34,3 +34,5 @@ export const EventBatchSchema = z.object({
 export type RoostEvent = z.infer<typeof EventSchema>;
 export type EventContext = z.infer<typeof ContextSchema>;
 export type EventBatch = z.infer<typeof EventBatchSchema>;
+
+export { MAX_EVENTS_PER_BATCH };

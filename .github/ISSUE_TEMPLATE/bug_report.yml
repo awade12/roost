@@ -1,0 +1,59 @@
+name: Bug report
+description: Something in the server, dashboard or an SDK doesn't work as it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Security issues don't go here:** report them privately (see SECURITY.md).
+        Please don't paste keys (`rk_…`), emails or other personal data.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - API
+        - Worker
+        - Dashboard
+        - JS SDK (@roost/sdk)
+        - Rust SDK (roost-sdk)
+        - CLI (roost push / pull / init)
+        - Deployment (Docker, Caddy)
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Roost release or commit, and the SDK version if it's an SDK bug.
+      placeholder: "server 0.x / commit abc1234, @roost/sdk 0.3.0"
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: How Roost is deployed, and for SDK bugs the platform (Expo iOS / Android, browser, Windows, Steam Deck …).
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or error output
+      description: Relevant API or worker logs, stack traces, or SDK errors. Remove keys and personal data.
+      render: text

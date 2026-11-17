@@ -4,9 +4,26 @@ WORKDIR /repo
 COPY . .
 RUN pnpm install --frozen-lockfile && pnpm --filter @roost/api build
 
+# The SDKs games install from this server (/sdk): an npm tarball and a Cargo registry.
+# Needs both toolchains, so it's its own stage.
+FROM rust:1-alpine AS sdks
+RUN apk add --no-cache nodejs npm musl-dev && npm i -g pnpm@12.10.1
+WORKDIR /repo
+COPY . .
+RUN pnpm install --frozen-lockfile && node scripts/build-sdks.ts
+
 # The build bundles all dependencies into dist/index.js, so no node_modules here.
 FROM node:22-alpine
 WORKDIR /app
 COPY --from=build /repo/apps/api/dist ./dist
+COPY --from=sdks /repo/dist/sdk ./sdk
+# The API applies these on start (MIGRATE_ON_START); the bundle can't reach the packages.
+COPY --from=build /repo/packages/db/migrations ./migrations/postgres
+COPY --from=build /repo/packages/clickhouse/migrations ./migrations/clickhouse
+ENV NODE_ENV=production \
+    SDK_DIR=/app/sdk \
+    PG_MIGRATIONS_DIR=/app/migrations/postgres \
+    CH_MIGRATIONS_DIR=/app/migrations/clickhouse
+EXPOSE 8787
 USER node
 CMD ["node", "dist/index.js"]

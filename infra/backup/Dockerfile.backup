@@ -1,0 +1,11 @@
+# pg_dump must be at least the server's major version: keep this in step with the
+# postgres image in docker-compose.yml.
+FROM postgres:16-alpine
+RUN apk add --no-cache aws-cli curl
+# RustFS/MinIO want path-style URLs; "when_required" checksums keep newer aws-cli
+# releases working with S3-compatible servers that don't support CRC trailers.
+ENV AWS_CONFIG_FILE=/etc/aws/config
+RUN mkdir -p /etc/aws && printf '[default]\ns3 =\n  addressing_style = path\nrequest_checksum_calculation = when_required\nresponse_checksum_validation = when_required\n' > /etc/aws/config
+COPY backup.sh /usr/local/bin/roost-backup
+USER postgres
+ENTRYPOINT ["/usr/local/bin/roost-backup"]

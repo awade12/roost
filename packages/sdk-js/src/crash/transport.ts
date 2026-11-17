@@ -1,4 +1,5 @@
-import { MAX_ATTACHMENT_BYTES, MAX_ATTACHMENTS, type Crash } from "@roost/contracts";
+import type { Crash } from "../wire/index.ts";
+import { MAX_ATTACHMENT_BYTES, MAX_ATTACHMENTS } from "@roost/contracts/limits";
 import type { RoostOptions } from "../types.ts";
 
 /** A file to send with a report, e.g. the player's save. */

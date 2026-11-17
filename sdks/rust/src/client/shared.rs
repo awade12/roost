@@ -22,6 +22,7 @@ pub(crate) struct Shared {
     /// `Sender` is `Sync`, so the panic hook can send without taking a lock.
     pub tx: Sender<Msg>,
     pub active: AtomicBool,
+    pub flags: crate::flags::Flags,
 }
 
 /// A panic elsewhere must not stop the SDK, so poisoned locks are used as-is.
@@ -100,6 +101,22 @@ impl Shared {
         }
         self.store.save_crash(&pending);
         self.send(Msg::Crash(Box::new(pending)));
+    }
+
+    /// The scope as the crash monitor keeps it, for a native crash that leaves no chance to ask.
+    #[cfg(feature = "native-crashes")]
+    pub(crate) fn native_snapshot(&self) -> Option<Vec<u8>> {
+        let scope = lock(&self.scope).clone();
+        crate::native::Snapshot {
+            context: serde_json::to_value(self.context()).ok(),
+            session_id: Some(self.session_id.clone()),
+            player_id: Some(self.config.player_id.clone()),
+            tags: scope.tags.clone(),
+            contexts: scope.contexts.clone(),
+            extra: scope.extra.clone(),
+            breadcrumbs: scope.breadcrumbs(),
+        }
+        .to_bytes()
     }
 
     fn scope_without_blocking(&self) -> Scope {

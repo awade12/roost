@@ -12,4 +12,6 @@ pub(crate) use build::{
     Raw, Who, build, clean_tags, limit_contexts, limit_extra, pick_files, to_object,
 };
 pub(crate) use panic::{describe, describe_error, install, short_type_name};
+#[cfg(feature = "native-crashes")]
+pub(crate) use scope::MAX_BREADCRUMBS;
 pub(crate) use scope::Scope;

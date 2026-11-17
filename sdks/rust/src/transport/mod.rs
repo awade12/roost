@@ -4,7 +4,7 @@ mod http;
 mod queue;
 mod store;
 
-pub(crate) use http::{HttpTransport, Outcome, outcome};
+pub(crate) use http::{HttpTransport, Outcome, outcome, percent_encode};
 pub use http::{Reply, Transport};
 pub use queue::MAX_QUEUED;
 pub(crate) use queue::Queue;

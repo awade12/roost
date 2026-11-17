@@ -1,4 +1,5 @@
-import { MAX_BREADCRUMBS, type Breadcrumb } from "@roost/contracts";
+import type { Breadcrumb } from "../wire/index.ts";
+import { MAX_BREADCRUMBS } from "@roost/contracts/limits";
 
 export type BreadcrumbInput = Omit<Breadcrumb, "ts"> & { ts?: string };
 

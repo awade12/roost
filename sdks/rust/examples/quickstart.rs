@@ -1,6 +1,7 @@
 //! Sends a few events, a caught error with a save file, and a panic to a Roost server.
 //!
 //! ROOST_ENDPOINT=http://localhost:8787 ROOST_KEY=rk_client_… cargo run --example quickstart
+//! Add `--features native-crashes` to also capture hard crashes (segfaults) as minidumps.
 
 use roost_sdk::{
     Attachment, Breadcrumb, BreadcrumbLevel, Capture, Config, PlayerReport, Roost, TrackEvent,
@@ -42,23 +43,29 @@ fn load_level(n: usize) -> u32 {
 }
 
 fn main() -> Result<(), roost_sdk::RoostError> {
+    // With native crashes on, the game re-launches itself as the crash monitor: let it run.
+    #[cfg(feature = "native-crashes")]
+    if roost_sdk::native::run_monitor_if_requested() {
+        return Ok(());
+    }
     let endpoint =
         std::env::var("ROOST_ENDPOINT").unwrap_or_else(|_| "http://localhost:8787".into());
     let key = std::env::var("ROOST_KEY").unwrap_or_default();
     let data_dir = std::env::temp_dir().join("roost-quickstart");
 
-    let roost = Roost::start(
-        Config::new(endpoint, key, "player-rust-1", "0.9.0+rust")
-            .data_dir(&data_dir)
-            .in_app("quickstart::")
-            .os_version("Steam Deck 3.7")
-            .attachments(|| {
-                vec![Attachment::new(
-                    "save.json",
-                    r#"{"slot":2,"gold":340,"level":"forest-3"}"#,
-                )]
-            }),
-    )?;
+    let config = Config::new(endpoint, key, "player-rust-1", "0.9.0+rust")
+        .data_dir(&data_dir)
+        .in_app("quickstart::")
+        .os_version("Steam Deck 3.7")
+        .attachments(|| {
+            vec![Attachment::new(
+                "save.json",
+                r#"{"slot":2,"gold":340,"level":"forest-3"}"#,
+            )]
+        });
+    #[cfg(feature = "native-crashes")]
+    let config = config.native_crashes(true);
+    let roost = Roost::start(config)?;
 
     roost.set_tag("level", "forest-3");
     roost.set_context(

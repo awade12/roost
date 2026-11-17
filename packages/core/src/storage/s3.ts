@@ -1,4 +1,4 @@
-import { CreateBucketCommand, GetObjectCommand, HeadBucketCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { CreateBucketCommand, DeleteObjectCommand, GetObjectCommand, HeadBucketCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { z } from "zod";
 
 export const StorageEnvSchema = z.object({
@@ -14,6 +14,7 @@ export type StorageEnv = z.infer<typeof StorageEnvSchema>;
 export type Storage = {
   put(key: string, body: Uint8Array, contentType: string): Promise<void>;
   get(key: string): Promise<{ body: Uint8Array; contentType: string } | null>;
+  delete(key: string): Promise<void>;
 };
 
 /** S3-compatible storage (RustFS locally, R2/S3 in production). */
@@ -46,6 +47,9 @@ export function createS3Storage(env: StorageEnv): Storage & { ensureBucket(): Pr
         return null;
       }
     },
+    async delete(key) {
+      await client.send(new DeleteObjectCommand({ Bucket, Key: key }));
+    },
   };
 }
 
@@ -58,6 +62,9 @@ export function memoryStorage(): Storage {
     },
     async get(key) {
       return files.get(key) ?? null;
+    },
+    async delete(key) {
+      files.delete(key);
     },
   };
 }

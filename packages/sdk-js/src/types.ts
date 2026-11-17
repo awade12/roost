@@ -1,4 +1,4 @@
-import type { Crash, EventContext, RoostEvent } from "@roost/contracts";
+import type { Crash, EventContext, RoostEvent } from "./wire/index.ts";
 import type { Attachment } from "./crash/transport.ts";
 
 export type { EventContext, RoostEvent };
@@ -37,6 +37,8 @@ export type RoostOptions = {
    * Up to 5 files, 10 MB each (2 MB for fatal crashes, which must be saved first).
    */
   getAttachments?: () => Attachment[] | Promise<Attachment[]>;
+  /** How often flags are re-fetched. Default 5 minutes. Unchanged config costs one tiny 304. */
+  configRefreshMs?: number;
   /** Swap in a custom fetch (tests, proxies). */
   fetch?: typeof fetch;
 };

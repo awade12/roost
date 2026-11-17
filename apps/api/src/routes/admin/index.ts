@@ -3,12 +3,13 @@ import { csrf } from "hono/csrf";
 import type { AppDeps } from "../../app.ts";
 import { aiAdminRoutes } from "./ai/index.ts";
 import { alertChannelRoutes, alertRuleRoutes } from "./alerts/index.ts";
-import { overviewRoutes } from "./analytics/index.ts";
+import { eventExplorerRoutes, overviewRoutes, playerRoutes, retentionRoutes } from "./analytics/index.ts";
 import { authRoutes, meRoutes } from "./auth/index.ts";
+import { configAdminRoutes } from "./config/index.ts";
 import { integrationRoutes } from "./integrations/index.ts";
 import { collabRoutes, eventRoutes, issueRoutes, linearRoutes } from "./issues/index.ts";
 import { reportAdminRoutes } from "./reports/index.ts";
-import { gameSettingsRoutes, studioSettingsRoutes } from "./settings/index.ts";
+import { debugFileAdminRoutes, gameSettingsRoutes, inviteRoutes, studioSettingsRoutes } from "./settings/index.ts";
 import { gameRoutes, keyRoutes, navRoutes, orgRoutes } from "./studio/index.ts";
 
 /**
@@ -36,7 +37,13 @@ export function adminRoutes(deps: AppDeps) {
     .route("/", alertChannelRoutes(deps))
     .route("/", alertRuleRoutes(deps))
     .route("/", reportAdminRoutes(deps))
-    .route("/", navRoutes(deps));
+    .route("/", navRoutes(deps))
+    .route("/", eventExplorerRoutes(deps))
+    .route("/", debugFileAdminRoutes(deps))
+    .route("/", retentionRoutes(deps))
+    .route("/", playerRoutes(deps))
+    .route("/", configAdminRoutes(deps))
+    .route("/", inviteRoutes(deps));
 }
 
 export type AdminApp = ReturnType<typeof adminRoutes>;

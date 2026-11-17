@@ -1,11 +1,7 @@
 import { z } from "zod";
+import { MAX_ATTACHMENTS, MAX_ATTACHMENT_BYTES, MAX_BREADCRUMBS } from "./limits.ts";
 import { ContextSchema } from "./events.ts";
 
-/** Most crash reports carry this many recent events, so the dashboard can show what led up to it. */
-export const MAX_BREADCRUMBS = 100;
-/** Per-attachment and per-report limits. Uploads past these are rejected. */
-export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
-export const MAX_ATTACHMENTS = 5;
 
 const jsonSize = (max: number) => (value: unknown) => JSON.stringify(value).length <= max;
 const Json = z.record(z.string().max(64), z.unknown());
@@ -83,3 +79,5 @@ export type CrashBatch = z.infer<typeof CrashBatchSchema>;
 export type StackFrame = z.infer<typeof StackFrameSchema>;
 export type Breadcrumb = z.infer<typeof BreadcrumbSchema>;
 export type AttachmentRef = z.infer<typeof AttachmentRefSchema>;
+
+export { MAX_BREADCRUMBS, MAX_ATTACHMENT_BYTES, MAX_ATTACHMENTS };

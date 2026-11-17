@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 
-export type ChatMessage = { role: "system" | "user"; content: string };
+export type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
 export type ChatRequest = {
   apiKey: string;
@@ -29,7 +29,8 @@ const ResponseSchema = z.object({
     .optional(),
 });
 
-export async function chat(req: ChatRequest): Promise<ChatResult> {
+/** Sends the request to OpenRouter; shared by plain and streaming calls. */
+export async function post(req: ChatRequest, stream: boolean): Promise<Response> {
   let res: Response;
   try {
     res = await (req.fetch ?? fetch)(ENDPOINT, {
@@ -41,15 +42,21 @@ export async function chat(req: ChatRequest): Promise<ChatResult> {
         messages: req.messages,
         max_tokens: req.maxTokens,
         temperature: req.temperature,
+        stream,
         // Asks OpenRouter to include the real cost, so spend caps use billed numbers.
         usage: { include: true },
       }),
-      signal: AbortSignal.timeout(req.timeoutMs ?? 30_000),
+      signal: AbortSignal.timeout(req.timeoutMs ?? (stream ? 120_000 : 30_000)),
     });
   } catch (err) {
     throw new UpstreamError(err instanceof Error && err.name === "TimeoutError" ? "OpenRouter timed out" : "OpenRouter unreachable");
   }
   if (!res.ok) throw new UpstreamError(`OpenRouter returned HTTP ${res.status}`);
+  return res;
+}
+
+export async function chat(req: ChatRequest): Promise<ChatResult> {
+  const res = await post(req, false);
   const parsed = ResponseSchema.safeParse(await res.json().catch(() => null));
   if (!parsed.success) throw new UpstreamError("OpenRouter returned an unexpected response");
   const { model, choices, usage } = parsed.data;

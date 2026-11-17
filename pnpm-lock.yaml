@@ -232,6 +232,10 @@ importers:
       zod:
         specifier: ^4.6.7
         version: 4.6.7
+    devDependencies:
+      '@jridgewell/gen-mapping':
+        specifier: ^0.3.13
+        version: 0.3.13
 
   apps/dashboard:
     dependencies:
@@ -241,6 +245,9 @@ importers:
       '@fontsource-variable/geist-mono':
         specifier: ^5.3.0
         version: 5.3.0
+      '@roost/setup':
+        specifier: workspace:*
+        version: link:../../packages/setup
       '@tanstack/react-query':
         specifier: ^5.107.1
         version: 5.107.1(@types/react@19.3.0)(react@19.3.1)
@@ -300,6 +307,18 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
 
+  packages/cli:
+    dependencies:
+      '@roost/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@roost/setup':
+        specifier: workspace:*
+        version: link:../setup
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
+
   packages/clickhouse:
     dependencies:
       '@clickhouse/client':
@@ -322,6 +341,9 @@ importers:
       '@aws-sdk/client-s3':
         specifier: ^3.1169.0
         version: 3.1169.0
+      '@jridgewell/trace-mapping':
+        specifier: ^0.3.31
+        version: 0.3.31
       '@roost/clickhouse':
         specifier: workspace:*
         version: link:../clickhouse
@@ -341,6 +363,9 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
     devDependencies:
+      '@jridgewell/gen-mapping':
+        specifier: ^0.3.13
+        version: 0.3.13
       '@types/nodemailer':
         specifier: ^8.0.2
         version: 8.0.2
@@ -369,6 +394,12 @@ importers:
       '@roost/contracts':
         specifier: workspace:*
         version: link:../contracts
+
+  packages/setup:
+    devDependencies:
+      vitest:
+        specifier: ^5.1.0
+        version: 5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
 
 packages:
 

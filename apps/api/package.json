@@ -1,6 +1,7 @@
 {
   "name": "@roost/api",
   "private": true,
+  "license": "FSL-1.1-ALv2",
   "type": "module",
   "exports": {
     "./admin": "./src/routes/admin/index.ts"
@@ -23,5 +24,8 @@
     "hono": "^4.13.18",
     "pino": "^10.4.0",
     "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@jridgewell/gen-mapping": "^0.3.13"
   }
 }

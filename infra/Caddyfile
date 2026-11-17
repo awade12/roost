@@ -1,8 +1,8 @@
-# One origin: dashboard at /, API at /v1, /admin and /health.
+# One origin: dashboard at /, API at /v1, /admin, /health and /sdk (SDK downloads).
 {$ROOST_DOMAIN} {
 	encode zstd gzip
 
-	@api path /v1/* /admin/* /health
+	@api path /v1/* /admin/* /health /sdk /sdk/*
 	handle @api {
 		reverse_proxy api:8787
 	}

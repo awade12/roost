@@ -10,6 +10,35 @@ Rules: see "Changelog" in `SPEC.md`.
 ## [Unreleased]
 
 ### Added
+- **api** The API applies pending Postgres and ClickHouse migrations on start, before it accepts requests, so upgrading is `git pull` and `docker compose up -d --build`. A Postgres advisory lock keeps two replicas from migrating at once. Turn it off with `MIGRATE_ON_START=false`; `pnpm db:migrate` still works.
+- **infra** Daily backups: a new `backup` service dumps Postgres (`pg_dump`, gzip) and backs up ClickHouse (`BACKUP DATABASE … TO S3`) into `s3://$S3_BUCKET/$BACKUP_PREFIX/` at `BACKUP_HOUR` UTC. `roost-backup list` and `restore postgres|clickhouse <stamp>` bring them back. Old backups are kept until an S3 lifecycle rule expires them.
+- **docs** `DEPLOY.md`: run Roost on one VPS (configuration, HTTPS, first sign-in, SDKs, upgrades, backups and restore, scaling, troubleshooting). `.env.example` now lists and explains every setting the server reads.
+- **api** Studio invites: owners invite people by email with a role (`/admin/orgs/:orgId/invites`); the link works for 7 days, only for that address, and lets them sign up even if the sign-up allowlist wouldn't. Re-inviting replaces the old link; owners can revoke pending invites.
+- **dashboard** Members page: invite form and pending invites with revoke. Invite links open a "Join <studio>" page that works before the person has any studio.
+- **docs** Roost is open source: the server is under FSL-1.1-ALv2 (each version becomes Apache-2.0 two years after release) and the SDKs under MIT. New `CONTRIBUTING.md`, `SECURITY.md` (report vulnerabilities privately through GitHub), issue forms and a pull request template.
+- **api** SDKs are hosted by Roost itself under `/sdk`: `npm install <roost>/sdk/js/latest.tgz` for Expo and web, and a Cargo sparse registry (`sparse+<roost>/sdk/cargo/`) for `roost-sdk`. `GET /sdk` lists versions and install lines. The setup guide (`ROOST.md`) now uses these.
+- **repo** `pnpm build:sdks` packages both SDKs into `dist/sdk`; the API image builds them at build time.
+- **dashboard** "Set up in your game": each game gets a setup dialog (game settings, game cards, and the Overview's first-run guide) that builds `ROOST.md` (step-by-step instructions written for a coding agent: endpoint, key, install, start-up code, events, crashes, reports, flags, AI, CI debug files, checks) and a starter `roost.config.json` for Expo, web or Rust, with only the features you pick. Copy, download, or "Copy for an agent" as one message; optionally create a client key and write it in.
+- **repo** `roost init --platform expo|web|rust [--features …]` writes the same files from the terminal, named after the server key's game and listing its real templates and flags. `GET /v1/manage/info` returns the key's game and environment.
+- **api** Management API for server keys: `GET`/`PUT /v1/manage/config` (whole config, with `prune` and `dry_run`), and per item `/v1/manage/templates/:name`, `/v1/manage/flags/:key`, `/v1/manage/ai-limits`, `/v1/manage/settings`. Pushing an unchanged config changes nothing (no version bumps).
+- **api** Query API for server keys: `/v1/query/events`, `/events/series`, `/overview`, `/retention`, `/players/:playerId` and `/issues`, scoped to the key's environment.
+- **api** AI proxy: `/v1/ai/run` takes conversation history (`messages`), per-call `options` (a model the template lists, fewer max tokens, temperature) and `stream: true` (Server-Sent Events: `delta`, then `done` or `error`). New `POST /v1/ai/complete` for any prompt and model with a server key, logged as `_direct` and counted against the game's limits. All additive.
+- **repo** `roost` CLI (`pnpm roost push|pull`): keep templates, flags and AI limits in `roost.config.json` or `.ts` in the game repo. `--dry-run` shows changes, `--prune` removes what's not in the file.
+- **api** Retention: `GET /admin/environments/:environmentId/retention?days=30|60|90&build=&platform=` returns install-day cohorts with players back on D1, D2, D3, D7, D14 and D30, and size-weighted averages over cohorts old enough to count. Unfinished days are left out instead of showing low.
+- **dashboard** Retention page: new players, D1/D7/D30 cards, and a cohort grid shaded by share retained, with build and platform filters.
+- **api** Players: search players seen in the last 30 days, and one player's profile (first and last seen, events, sessions, days played, builds, daily activity, top events, crashes with their issues, and their reports).
+- **dashboard** Players page and player profile, with "Open in Events" pre-filtered to that player (Events accepts `?player=`).
+- **api** Config & flags: per-environment flags (on/off, text, number, JSON) with a value for everyone, a gradual rollout (stable per-player bucketing, so raising the percent only adds players) and per-player overrides. `GET /v1/config?playerId=` returns every flag resolved for that player with OpenFeature reasons and variants, and answers 304 to `If-None-Match` until something changes. Admin create, edit and delete.
+- **dashboard** Config & flags page: flag list with rollout share and override counts, and an editor that checks every value against the flag's type.
+- **api** Native crashes: `POST /v1/minidumps` and `PUT /v1/minidumps/:id/dump` (up to 20 MB, must be a minidump). The worker stackwalks each dump with Mozilla's `minidump-stackwalk`, using any matching uploaded symbols, then groups it into an issue with the OS exception as the type and the crashing thread as the stack. The dump is attached to the event. Unmatched frames show as `module+0xoffset`.
+- **api** Debug file uploads with a server key: `PUT /v1/debug-files/breakpad` (`.sym` from `dump_syms`; module and debug id read from the file) and `PUT /v1/debug-files/sourcemaps?build=&name=`. Admin list and delete per game.
+- **api** JS source maps: crashes from a build with uploaded source maps wait for the worker, which maps V8, Hermes and Safari stacks back to original files and lines before grouping, so issues group on your real code. Library frames (`node_modules`) aren't in-app.
+- **worker** Symbolication queue, drained every 5 seconds; safe with several workers. A crash that can't be processed after 3 tries, or whose dump never arrives within an hour, is still recorded, unsymbolicated.
+- **dashboard** Debug files section in game settings: uploaded symbols and source maps, with delete and upload instructions.
+- **repo** `pnpm upload:debug-files --endpoint --key [--build] <files>` uploads `.sym` and `.map` files from CI.
+- **infra** The worker image includes `minidump-stackwalk`.
+- **api** Event explorer: `GET /admin/environments/:environmentId/events` (newest first, 100 per page with a cursor), `/events/series` (hourly or daily counts) and `/events/facets` (names, builds, platforms). Filter by time range, event name, player, build, platform, or any prop `key = value` (strings, numbers, booleans).
+- **dashboard** Events page: filters, a chart of the filtered events, and the stream. Click a row for its props JSON (with copy), or a name or player to filter by it. The chart supports hourly buckets.
 - **dashboard** Redesigned sidebar (option C in Paper): the game switcher and environment tabs sit at the top under the wordmark, unbuilt sections are dimmed with a "soon" tag, Issues shows new and regressed counts and Player reports shows open ones, and the footer has your account, Settings and sign out. The active page is a quiet fill, not an accent bar.
 - **api** `GET /admin/environments/:environmentId/nav-counts` for the sidebar badges.
 - **api** Player reports: `POST /v1/reports` (a player's message, category, optional email, tags, contexts, extra, breadcrumbs) and `PUT /v1/reports/:reportId/attachments/:attachmentId` for screenshots and saves. Additive to `/v1`; retries are stored once.
@@ -62,6 +91,8 @@ Rules: see "Changelog" in `SPEC.md`.
 - **docs** Product spec (`SPEC.md`): modules, project structure, code rules, changelog rules.
 
 ### Changed
+- **infra** Production compose points the API and worker at the bundled Postgres and ClickHouse itself and sets `NODE_ENV=production` and port 8787, so `.env` only needs the passwords. Run it as `docker compose --env-file .env -f infra/docker-compose.yml …` from the repo root. The worker now waits until the API is healthy (migrations done).
+- **api** Debug-file uploads use the same server-key check as the management API (same error).
 - **dashboard** The game and environment picker moved from the header into the sidebar; the header shows game / page.
 - **api** The `/v1` rate limit is now per key and set per game (default 120 a minute, as before) instead of fixed. Key lookups are cached for 30 seconds; revoking a key still takes effect at once on the same server.
 
@@ -69,6 +100,7 @@ Rules: see "Changelog" in `SPEC.md`.
 - **dashboard** Segmented controls inside forms no longer submit the form when clicked.
 
 ### Security
+- **api** SDK downloads under `/sdk` need a valid Roost key (any unrevoked client or server key): `?key=` on the npm URL, or Cargo's registry login (`auth-required`, `credential-provider = ["cargo:token"]`). Only the version info page and Cargo's `config.json` are open; they hold no code. Revoking a key stops its downloads.
 - **api** Alert webhook URLs are encrypted at rest like integration keys and never returned; the dashboard shows only the host and last 4 characters. Discord and Slack URLs must be the provider's webhook endpoint, and others must be https. Test sends go only to the person testing.
 - **api** Sign-in codes expire after 10 minutes, work once, die after 5 wrong tries, and only the newest code works. They are stored as an HMAC, never in plain text, and never logged.
 - **api** Code requests are limited to 3 per email and 10 per IP per 15 minutes; checks to 20 per IP. `SIGNUP_ALLOWLIST` controls who may create an account, and the form answers the same for every email.

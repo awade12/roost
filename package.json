@@ -1,6 +1,7 @@
 {
   "name": "roost",
   "private": true,
+  "license": "FSL-1.1-ALv2",
   "type": "module",
   "packageManager": "pnpm@12.10.1",
   "engines": {
@@ -17,7 +18,10 @@
     "db:up": "docker compose -f infra/docker-compose.dev.yml up -d",
     "db:down": "docker compose -f infra/docker-compose.dev.yml down",
     "db:migrate": "pnpm --filter @roost/db db:migrate && pnpm --filter @roost/clickhouse ch:migrate",
-    "seed:events": "node scripts/seed-events.ts"
+    "seed:events": "node scripts/seed-events.ts",
+    "upload:debug-files": "node scripts/upload-debug-files.ts",
+    "roost": "node packages/cli/src/index.ts",
+    "build:sdks": "node scripts/build-sdks.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

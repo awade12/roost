@@ -1,4 +1,4 @@
-import type { Crash } from "@roost/contracts";
+import type { Crash } from "../wire/index.ts";
 import type { QueueStorage, RoostOptions } from "../types.ts";
 import type { Scope } from "./scope.ts";
 import { deliver, prepareFiles, refsFor, type Attachment, type PendingReport } from "./transport.ts";

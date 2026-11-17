@@ -1,9 +1,13 @@
 import { useState, type KeyboardEvent, type PointerEvent } from "react";
-import { formatCompact, formatLongDay, formatNumber, formatShortDay } from "../../lib/format.ts";
+import { formatCompact, formatHour, formatLongDay, formatLongHour, formatNumber, formatShortDay } from "../../lib/format.ts";
 import { xLabelIndexes, yTicks } from "./scale.ts";
 import { useWidth } from "./use-width.ts";
 
+/** `day` is "YYYY-MM-DD" for daily charts, or an ISO timestamp for hourly ones. */
 type Point = { day: string; value: number };
+type Unit = "day" | "hour";
+const SHORT: Record<Unit, (k: string) => string> = { day: formatShortDay, hour: formatHour };
+const LONG: Record<Unit, (k: string) => string> = { day: formatLongDay, hour: (k) => `${formatLongHour(k)} UTC` };
 type Props = {
   data: Point[];
   /** What the value is, for the tooltip and the screen-reader table. */
@@ -11,6 +15,8 @@ type Props = {
   /** Draw the last segment dashed: the last day is still in progress. */
   partialLast?: boolean;
   height?: number;
+  /** Buckets are days (default) or hours. */
+  unit?: Unit;
 };
 
 const PAD = { top: 8, right: 8, bottom: 24, left: 40 };
@@ -27,7 +33,7 @@ function geometry(data: Point[], width: number, height: number) {
 }
 type Geo = ReturnType<typeof geometry>;
 
-function Axes({ data, geo, width, height }: { data: Point[]; geo: Geo; width: number; height: number }) {
+function Axes({ data, geo, width, height, unit }: { data: Point[]; geo: Geo; width: number; height: number; unit: Unit }) {
   const last = data.length - 1;
   return (
     <>
@@ -41,7 +47,7 @@ function Axes({ data, geo, width, height }: { data: Point[]; geo: Geo; width: nu
       ))}
       {xLabelIndexes(data.length).map((i) => (
         <text key={i} x={geo.x(i)} y={height - 6} textAnchor={i === 0 ? "start" : i === last ? "end" : "middle"} className="fill-muted font-mono text-[11px]">
-          {formatShortDay(data[i]?.day ?? "")}
+          {SHORT[unit](data[i]?.day ?? "")}
         </text>
       ))}
     </>
@@ -68,7 +74,7 @@ function Series({ data, geo, partialLast }: { data: Point[]; geo: Geo; partialLa
   );
 }
 
-function Tooltip({ point, left, flip, partial }: { point: Point; left: number; flip: boolean; partial: boolean }) {
+function Tooltip({ point, left, flip, partial, unit }: { point: Point; left: number; flip: boolean; partial: boolean; unit: Unit }) {
   return (
     <div
       className="pointer-events-none absolute top-1 rounded-md border border-border bg-bg px-2.5 py-1.5 shadow-lg"
@@ -77,7 +83,7 @@ function Tooltip({ point, left, flip, partial }: { point: Point; left: number; f
     >
       <p className="font-mono text-sm font-semibold">{formatNumber(point.value)}</p>
       <p className="text-xs text-muted">
-        {formatLongDay(point.day)}
+        {LONG[unit](point.day)}
         {partial ? " · so far" : ""}
       </p>
     </div>
@@ -85,7 +91,7 @@ function Tooltip({ point, left, flip, partial }: { point: Point; left: number; f
 }
 
 /** Single-series daily area chart with a crosshair + tooltip (pointer and arrow keys). */
-export function AreaChart({ data, label, partialLast = false, height = 220 }: Props) {
+export function AreaChart({ data, label, partialLast = false, height = 220, unit = "day" }: Props) {
   const { ref, width } = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
   const geo = geometry(data, width, height);
@@ -106,7 +112,7 @@ export function AreaChart({ data, label, partialLast = false, height = 220 }: Pr
     <div ref={ref} className="relative outline-none focus-visible:ring-1 focus-visible:ring-muted" tabIndex={0} aria-label={`${label} chart. Use the arrow keys to read values.`} onKeyDown={step} onBlur={() => setHover(null)}>
       {width > 0 && (
         <svg width={width} height={height} className="block" aria-hidden>
-          <Axes data={data} geo={geo} width={width} height={height} />
+          <Axes data={data} geo={geo} width={width} height={height} unit={unit} />
           <Series data={data} geo={geo} partialLast={partialLast} />
           {point && hover !== null && (
             <>
@@ -117,9 +123,9 @@ export function AreaChart({ data, label, partialLast = false, height = 220 }: Pr
           <rect x={PAD.left} y={PAD.top} width={geo.plotW} height={geo.plotH} fill="transparent" onPointerMove={pick} onPointerLeave={() => setHover(null)} />
         </svg>
       )}
-      {point && hover !== null && <Tooltip point={point} left={geo.x(hover)} flip={hover > data.length / 2} partial={partialLast && hover === last} />}
+      {point && hover !== null && <Tooltip point={point} left={geo.x(hover)} flip={hover > data.length / 2} partial={partialLast && hover === last} unit={unit} />}
       <table className="sr-only">
-        <caption>{label} by day</caption>
+        <caption>{label} by {unit}</caption>
         <tbody>
           {data.map((d) => (
             <tr key={d.day}>

@@ -4,9 +4,16 @@ WORKDIR /repo
 COPY . .
 RUN pnpm install --frozen-lockfile && pnpm --filter @roost/worker build
 
+# Mozilla's minidump-stackwalk turns native crash dumps into stacks. Built for musl so it
+# runs on the alpine image below.
+FROM rust:1-alpine AS stackwalk
+RUN apk add --no-cache musl-dev && cargo install --locked minidump-stackwalk --root /out
+
 # The build bundles all dependencies into dist/index.js, so no node_modules here.
 FROM node:22-alpine
 WORKDIR /app
 COPY --from=build /repo/apps/worker/dist ./dist
+COPY --from=stackwalk /out/bin/minidump-stackwalk /usr/local/bin/minidump-stackwalk
+ENV NODE_ENV=production
 USER node
 CMD ["node", "dist/index.js"]

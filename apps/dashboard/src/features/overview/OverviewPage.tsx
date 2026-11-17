@@ -68,7 +68,7 @@ export function OverviewPage() {
       {overview.isError && <p className="text-danger">{overview.error.message}</p>}
       <Metrics data={data} />
       {(games.isPending || (selected && overview.isPending)) && <p className="text-muted">Loading…</p>}
-      {data?.hasEvents ? <Charts data={data} /> : (!selected || data) && <GetStarted />}
+      {data?.hasEvents ? <Charts data={data} /> : (!selected || data) && <GetStarted gameId={selected?.game.id} />}
     </div>
   );
 }

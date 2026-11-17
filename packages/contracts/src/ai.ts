@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+const MODEL_ID = /^[\w.-]+\/[\w.:-]+$/;
+const turns = <const R extends readonly [string, ...string[]]>(roles: R) =>
+  z
+    .array(z.object({ role: z.enum(roles), content: z.string().max(8000) }))
+    .max(40)
+    .refine((m) => m.reduce((n, t) => n + t.content.length, 0) <= 48_000, "messages over 48,000 characters");
+
 /** POST /v1/ai/run — run a server-side prompt template by name. */
 export const AiRunSchema = z.object({
   template: z.string().min(1).max(64).regex(/^[a-z][a-z0-9_]*$/, "snake_case"),
@@ -7,6 +14,39 @@ export const AiRunSchema = z.object({
   vars: z.record(z.string().max(64), z.union([z.string().max(4000), z.number(), z.boolean()])).default({}),
   /** Budgets and rate limits apply per player. */
   playerId: z.string().min(1).max(64),
+  /**
+   * Earlier turns of a conversation (added with the AI proxy chat update). They go between the
+   * template's system prompt and its rendered user message, so an NPC can remember what was said.
+   */
+  messages: turns(["user", "assistant"]).optional(),
+  /**
+   * Per-call tweaks, within what the template allows: `model` must be the template's model or
+   * one of its fallbacks, and `maxTokens` can only go down.
+   */
+  options: z
+    .object({
+      model: z.string().regex(MODEL_ID).max(100).optional(),
+      maxTokens: z.number().int().min(1).max(4000).optional(),
+      temperature: z.number().min(0).max(2).optional(),
+    })
+    .optional(),
+  /** Stream the answer as Server-Sent Events (`delta`, then `done` or `error`). */
+  stream: z.boolean().optional(),
+});
+
+/**
+ * POST /v1/ai/complete — any prompt, any OpenRouter model, for your own servers and tools.
+ * Server keys only: a client key ships inside the game, so it must stay limited to templates.
+ */
+export const AiCompleteSchema = z.object({
+  model: z.string().regex(MODEL_ID).max(100),
+  fallbackModels: z.array(z.string().regex(MODEL_ID).max(100)).max(3).default([]),
+  messages: turns(["system", "user", "assistant"]).refine((m) => m.length > 0, "at least one message"),
+  maxTokens: z.number().int().min(1).max(4000).default(500),
+  temperature: z.number().min(0).max(2).default(0.7),
+  /** Counts the call against that player's limits; defaults to "server". */
+  playerId: z.string().min(1).max(64).default("server"),
+  stream: z.boolean().optional(),
 });
 
 export const AiRunResponseSchema = z.object({
@@ -17,4 +57,5 @@ export const AiRunResponseSchema = z.object({
 });
 
 export type AiRun = z.infer<typeof AiRunSchema>;
+export type AiComplete = z.infer<typeof AiCompleteSchema>;
 export type AiRunResponse = z.infer<typeof AiRunResponseSchema>;

@@ -3,9 +3,12 @@ use std::time::{SystemTime, UNIX_EPOCH};
 /// Current UTC time as RFC 3339 with milliseconds, e.g. `2026-11-16T09:15:20.052Z`.
 /// Hand-rolled so the SDK doesn't need a date crate for one format.
 pub(crate) fn now_rfc3339() -> String {
-    let since = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default();
+    rfc3339(SystemTime::now())
+}
+
+/// Any instant (e.g. a file's mtime) in the same format; before 1970 counts as 1970.
+pub(crate) fn rfc3339(at: SystemTime) -> String {
+    let since = at.duration_since(UNIX_EPOCH).unwrap_or_default();
     let secs = i64::try_from(since.as_secs()).unwrap_or(0);
     format_rfc3339(secs, since.subsec_millis())
 }

@@ -1,5 +1,6 @@
-export { chat, UpstreamError, type ChatMessage, type ChatResult } from "./openrouter.ts";
+export { chat, UpstreamError, type ChatMessage, type ChatResult } from "./upstream/openrouter.ts";
 export { placeholders, renderTemplate } from "./render.ts";
-export { runTemplate, type RunDeps, type RunResult } from "./run.ts";
+export { execute, planComplete, planTemplate, runTemplate, type OnDelta, type Plan, type RunDeps, type RunResult } from "./run.ts";
+export { chatStream } from "./upstream/stream.ts";
 export * from "./templates/index.ts";
 export { usageSummary, type TemplateUsage } from "./usage.ts";

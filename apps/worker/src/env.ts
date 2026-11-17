@@ -1,4 +1,5 @@
 import { ClickhouseEnvSchema } from "@roost/clickhouse";
+import { storage } from "@roost/core";
 import { z } from "zod";
 
 /** Treats `KEY=` (empty) in .env as "not set". */
@@ -17,8 +18,11 @@ const EnvSchema = z
     EMAIL_FROM: z.string().optional().transform(blank),
     /** Linked from alerts so they open the issue. */
     DASHBOARD_URL: z.string().optional().transform(blank).pipe(z.url().optional()),
+    /** Mozilla's minidump-stackwalk (cargo install minidump-stackwalk). The worker image ships it. */
+    MINIDUMP_STACKWALK: z.string().default("minidump-stackwalk"),
   })
-  .extend(ClickhouseEnvSchema.shape);
+  .extend(ClickhouseEnvSchema.shape)
+  .extend(storage.StorageEnvSchema.shape);
 
 export type Env = z.infer<typeof EnvSchema>;
 

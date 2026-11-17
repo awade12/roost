@@ -21,22 +21,42 @@
 //! # Ok::<(), roost_sdk::RoostError>(())
 //! ```
 //!
+//! ## Hard crashes (feature `native-crashes`)
+//!
+//! Segfaults, aborts and stack overflows kill the game before any Rust code can report them.
+//! With the `native-crashes` feature the game re-launches itself as a small monitor process
+//! that writes a minidump when the game dies; it is sent with the scope at crash time
+//! (tags, contexts, extra, breadcrumbs) and `Config::attachments` on the next launch.
+//! Two lines, the first one at the very top of `main`:
+//!
+//! ```ignore
+//! if roost_sdk::native::run_monitor_if_requested() { return; }
+//! let roost = Roost::start(config.data_dir(dir).native_crashes(true))?;
+//! ```
+//!
+//! It needs `data_dir`. If the monitor can't start, the game runs without native capture.
+//!
 //! Rule: this crate must never crash the game. No `unwrap`, `expect` or `panic!`
 //! (enforced by clippy lints in Cargo.toml). Every failure is swallowed or returned.
 
 mod client;
 mod crash;
 mod error;
+mod flags;
 mod model;
+#[cfg(feature = "native-crashes")]
+pub mod native;
 mod transport;
 
 pub use client::{
-    AiResponse, AiUsage, AttachmentsFn, BeforeSend, Config, PlayerReport, ReportCategory, Roost,
+    AiOptions, AiResponse, AiTurn, AiUsage, AttachmentsFn, BeforeSend, Config, PlayerReport,
+    ReportCategory, Roost,
 };
 pub use crash::{
     Attachment, Capture, MAX_ATTACHMENT_BYTES, MAX_ATTACHMENTS, PANIC_ATTACHMENT_BUDGET,
 };
 pub use error::RoostError;
+pub use flags::ResolvedFlag;
 pub use model::{
     AttachmentRef, Breadcrumb, BreadcrumbLevel, Crash, DeviceContext, Event, Frame, JsonMap, Kind,
     Level, Platform, Props, TrackEvent,

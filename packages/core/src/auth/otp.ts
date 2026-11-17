@@ -1,4 +1,4 @@
-import { otpCodes, type Db } from "@roost/db";
+import { invites, otpCodes, type Db } from "@roost/db";
 import { and, desc, eq, gt, isNull, lt, sql } from "drizzle-orm";
 import { otpEmail, type Mailer } from "../email/index.ts";
 import { hmac, normalizeEmail, randomCode, safeEqual } from "./tokens.ts";
@@ -19,13 +19,24 @@ export type OtpDeps = {
 // The email is part of the HMAC input so a code is only valid for the address it was sent to.
 const codeHash = (secret: string, email: string, code: string) => hmac(secret, `${email}:${code}`);
 
+/** Queried here rather than through the invites module, which depends on auth. */
+async function hasPendingInvite(db: OtpDeps["db"], email: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: invites.id })
+    .from(invites)
+    .where(and(eq(invites.email, email), isNull(invites.acceptedAt), gt(invites.expiresAt, new Date())))
+    .limit(1);
+  return !!row;
+}
+
 /**
  * Emails a sign-in code. Silently does nothing for an email that may not sign
  * up, so callers can always answer "check your inbox" without revealing anything.
  */
 export async function startOtp(deps: OtpDeps, rawEmail: string): Promise<void> {
   const email = normalizeEmail(rawEmail);
-  if (!(await findUserByEmail(deps.db, email)) && !deps.canSignUp(email)) return;
+  // New accounts need the allowlist, or a pending invite to this email.
+  if (!(await findUserByEmail(deps.db, email)) && !deps.canSignUp(email) && !(await hasPendingInvite(deps.db, email))) return;
 
   const code = randomCode();
   await deps.db.transaction(async (tx) => {

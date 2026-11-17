@@ -1,14 +1,14 @@
 import { zValidator } from "@hono/zod-validator";
 import { CrashBatchSchema, MAX_ATTACHMENT_BYTES } from "@roost/contracts";
-import { issues } from "@roost/core";
+import { issues, symbolication } from "@roost/core";
 import { Hono, type Context } from "hono";
 import { z } from "zod";
-import type { AppDeps } from "../../app.ts";
+import type { AppDeps } from "../../../app.ts";
 import type { Db } from "@roost/db";
 import type { storage as storageTypes } from "@roost/core";
-import { limitBody, ONE_MB } from "../../http/body-limit.ts";
-import { requireKey, type KeyVars } from "../../http/client-key.ts";
-import { AppError } from "../../http/errors.ts";
+import { limitBody, ONE_MB } from "../../../http/body-limit.ts";
+import { requireKey, type KeyVars } from "../../../http/client-key.ts";
+import { AppError } from "../../../http/errors.ts";
 
 const AttachmentParams = z.object({ crashId: z.uuid(), attachmentId: z.uuid() });
 const Filename = z.string().min(1).max(128);
@@ -28,14 +28,15 @@ export function crashRoutes({ db, ch, storage }: AppDeps) {
             );
         }),
         async (c) => {
-          const frames = c.get("settings").issues.groupingFrames;
-          const received = await issues.recordCrashes(
-            db,
-            ch,
-            c.get("environmentId"),
-            c.req.valid("json"),
-            frames,
-          );
+          const batch = c.req.valid("json");
+          const env = c.get("environmentId");
+          // With source maps for this build, the worker maps the stacks before grouping;
+          // otherwise issues would group on minified names.
+          if (await symbolication.hasSourceMaps(db, c.get("gameId"), batch.context.build)) {
+            for (const crash of batch.crashes) await symbolication.enqueueJs(db, env, c.get("gameId"), batch.context, crash);
+            return c.json({ received: batch.crashes.length }, 202);
+          }
+          const received = await issues.recordCrashes(db, ch, env, batch, c.get("settings").issues.groupingFrames);
           return c.json({ received }, 202);
         },
       )

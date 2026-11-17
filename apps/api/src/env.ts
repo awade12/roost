@@ -21,6 +21,16 @@ const EnvSchema = z
     OPENROUTER_API_KEY: z.string().optional().transform(blank),
     /** Public dashboard address, linked from issues sent to Linear. */
     DASHBOARD_URL: z.string().optional().transform(blank).pipe(z.url().optional()),
+    /** Built SDK packages to serve under /sdk (pnpm build:sdks). */
+    SDK_DIR: z.string().default("../../dist/sdk"),
+    /** Apply pending Postgres and ClickHouse migrations before listening. Set false to run them yourself. */
+    MIGRATE_ON_START: z
+      .enum(["true", "false", "1", "0"])
+      .default("true")
+      .transform((v) => v === "true" || v === "1"),
+    /** Defaults suit `pnpm dev` (cwd apps/api); the Docker image sets /app/migrations/*. */
+    PG_MIGRATIONS_DIR: z.string().default("../../packages/db/migrations"),
+    CH_MIGRATIONS_DIR: z.string().default("../../packages/clickhouse/migrations"),
   })
   .extend(ClickhouseEnvSchema.shape)
   .extend(storage.StorageEnvSchema.shape)

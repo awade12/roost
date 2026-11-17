@@ -3,6 +3,7 @@ import { ConfirmDialog, Select } from "../../../components/ui/index.ts";
 import { useMe } from "../../session/index.ts";
 import { useCurrentOrg, useMembers } from "../../studio/index.ts";
 import { useRemoveMember, useSetMemberRole } from "../api/use-studio-settings.ts";
+import { InvitesCard } from "../components/InvitesCard.tsx";
 import { Section } from "../components/SettingsSection.tsx";
 
 type Role = "owner" | "dev" | "viewer";
@@ -24,7 +25,9 @@ export function MembersPage() {
   const error = setRole.error ?? remove.error;
 
   return (
-    <Section title="Members" description="Change roles or remove people. Inviting new members is coming next.">
+    <div className="flex flex-col gap-5">
+      {isOwner && <InvitesCard orgId={org.id} />}
+      <Section title="Members" description="Change roles or remove people.">
       {members.isPending && <p className="px-4 py-3 text-muted">Loading members…</p>}
       {members.isError && <p className="px-4 py-3 text-danger">{members.error.message}</p>}
       {members.data?.map((m) => (
@@ -63,6 +66,7 @@ export function MembersPage() {
         onCancel={() => setRemoving(null)}
         onConfirm={() => removing && remove.mutate(removing.id, { onSuccess: () => setRemoving(null) })}
       />
-    </Section>
+      </Section>
+    </div>
   );
 }

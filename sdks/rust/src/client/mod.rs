@@ -1,9 +1,11 @@
+mod ai;
 mod calls;
 mod config;
 mod shared;
 mod worker;
 
-pub use calls::{AiResponse, AiUsage, PlayerReport, ReportCategory};
+pub use ai::{AiOptions, AiResponse, AiTurn, AiUsage};
+pub use calls::{PlayerReport, ReportCategory};
 pub use config::{AttachmentsFn, BeforeSend, Config};
 
 use crate::crash::{self, Attachment, Capture, Raw, Scope, to_object};
@@ -24,6 +26,8 @@ use worker::Msg;
 pub struct Roost {
     shared: Arc<Shared>,
     worker: Mutex<Option<JoinHandle<()>>>,
+    #[cfg(feature = "native-crashes")]
+    native: Mutex<Option<crate::native::Guard>>,
 }
 
 impl Roost {
@@ -50,6 +54,7 @@ impl Roost {
             transport,
             tx,
             active: AtomicBool::new(true),
+            flags: crate::flags::Flags::new(config.data_dir.as_deref()),
             config,
         });
         let handle = worker::spawn(Arc::clone(&shared), rx, pending)
@@ -66,6 +71,8 @@ impl Roost {
             });
         }
         let roost = Self {
+            #[cfg(feature = "native-crashes")]
+            native: Mutex::new(attach_native(&shared)),
             shared,
             worker: Mutex::new(Some(handle)),
         };
@@ -173,10 +180,59 @@ impl Roost {
 
     /// Tracks `session_end`, sends what it can, saves the rest, and stops reporting panics.
     /// Called on drop too.
+    /// A boolean flag from the dashboard, or `default` if it doesn't exist (yet) or isn't a boolean.
+    pub fn flag_bool(&self, key: &str, default: bool) -> bool {
+        self.shared
+            .flags
+            .get(key, "boolean")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(default)
+    }
+
+    pub fn flag_str(&self, key: &str, default: &str) -> String {
+        self.shared
+            .flags
+            .get(key, "string")
+            .and_then(|v| v.as_str().map(str::to_owned))
+            .unwrap_or_else(|| default.to_owned())
+    }
+
+    pub fn flag_f64(&self, key: &str, default: f64) -> f64 {
+        self.shared
+            .flags
+            .get(key, "number")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(default)
+    }
+
+    /// A JSON flag deserialized into your type, e.g. tuning values; `default` if missing or it doesn't fit.
+    pub fn flag_json<T: serde::de::DeserializeOwned>(&self, key: &str, default: T) -> T {
+        self.shared
+            .flags
+            .get(key, "json")
+            .and_then(|v| serde_json::from_value(v).ok())
+            .unwrap_or(default)
+    }
+
+    /// The flag with its OpenFeature reason and variant, for logging or debugging targeting.
+    pub fn flag_details(&self, key: &str) -> Option<crate::flags::ResolvedFlag> {
+        self.shared.flags.details(key)
+    }
+
+    /// Fetches flags now and waits for the answer (up to the timeout). True if values changed.
+    pub fn refresh_flags(&self) -> bool {
+        let (done, wait) = mpsc::sync_channel(1);
+        self.shared.send(Msg::RefreshFlags(done));
+        wait.recv_timeout(self.shared.config.timeout * 2)
+            .unwrap_or(false)
+    }
+
     pub fn shutdown(&self) {
         if !self.shared.active.swap(false, Ordering::AcqRel) {
             return;
         }
+        #[cfg(feature = "native-crashes")]
+        lock(&self.native).take();
         self.track("session_end");
         let (done, wait) = mpsc::sync_channel(1);
         self.shared.send(Msg::Stop(done));
@@ -192,6 +248,19 @@ impl Drop for Roost {
     fn drop(&mut self) {
         self.shutdown();
     }
+}
+
+/// `None` when off, without a data dir, or when the monitor couldn't start.
+#[cfg(feature = "native-crashes")]
+fn attach_native(shared: &Arc<Shared>) -> Option<crate::native::Guard> {
+    let config = &shared.config;
+    if !config.native_crashes {
+        return None;
+    }
+    let dir = config.data_dir.as_deref()?;
+    // Weak: the snapshot thread must not keep the client alive after the game drops it.
+    let weak = Arc::downgrade(shared);
+    crate::native::attach(dir, move || weak.upgrade()?.native_snapshot())
 }
 
 fn validate(config: &Config) -> Result<(), RoostError> {

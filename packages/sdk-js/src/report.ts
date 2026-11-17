@@ -1,4 +1,4 @@
-import type { PlayerReport } from "@roost/contracts";
+import type { PlayerReport } from "./wire/index.ts";
 import { fromBase64, prepareFiles, refsFor, type Attachment, type Scope } from "./crash/index.ts";
 import type { RoostOptions } from "./types.ts";
 

@@ -2,10 +2,10 @@ import { zValidator } from "@hono/zod-validator";
 import { EventBatchSchema } from "@roost/contracts";
 import { ingest } from "@roost/core";
 import { Hono } from "hono";
-import type { AppDeps } from "../../app.ts";
-import { requireKey, type KeyVars } from "../../http/client-key.ts";
-import { limitBody, ONE_MB } from "../../http/body-limit.ts";
-import { AppError } from "../../http/errors.ts";
+import type { AppDeps } from "../../../app.ts";
+import { requireKey, type KeyVars } from "../../../http/client-key.ts";
+import { limitBody, ONE_MB } from "../../../http/body-limit.ts";
+import { AppError } from "../../../http/errors.ts";
 
 export function eventRoutes({ db, ch }: AppDeps) {
   return new Hono<{ Variables: KeyVars }>().post(

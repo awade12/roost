@@ -1,4 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
+import { AiLimitsSchema, TemplateBodySchema, TemplateNameSchema } from "@roost/contracts";
 import { ai, studio } from "@roost/core";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -9,22 +10,9 @@ import { requireSession, type SessionVars } from "../auth/index.ts";
 
 const GameParam = z.object({ gameId: z.uuid() });
 const TemplateParam = z.object({ templateId: z.uuid() });
-// OpenRouter model ids look like "provider/model" or "provider/model:variant".
-const Model = z.string().regex(/^[\w.-]+\/[\w.:-]+$/, "provider/model").max(100);
-const Template = z.object({
-  name: z.string().min(1).max(64).regex(/^[a-z][a-z0-9_]*$/, "snake_case"),
-  model: Model,
-  fallbackModels: z.array(Model).max(3).default([]),
-  systemPrompt: z.string().max(8000),
-  userTemplate: z.string().min(1).max(8000),
-  maxTokens: z.number().int().min(1).max(4000),
-  temperature: z.number().min(0).max(2),
-});
-const Limits = z.object({
-  monthlyCapCents: z.number().int().min(0).max(10_000_000),
-  playerDailyTokens: z.number().int().min(0).max(10_000_000),
-  playerPerMinute: z.number().int().min(0).max(1000),
-});
+// Shared with /v1/manage and the CLI, so a template is valid the same way everywhere.
+const Template = TemplateBodySchema.extend({ name: TemplateNameSchema });
+const Limits = AiLimitsSchema;
 
 export function aiAdminRoutes({ db, ch }: AppDeps) {
   const forGame = async (userId: string, gameId: string, need: studio.Role) =>

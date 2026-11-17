@@ -22,3 +22,9 @@ export function formatAgo(date: string | Date): string {
   for (const [unit, size] of units) if (Math.abs(seconds) >= size) return rtf.format(Math.round(seconds / size), unit);
   return "just now";
 }
+const hour = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+const longHour = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" });
+/** ISO hour bucket (UTC) → "09:00". */
+export const formatHour = (iso: string) => hour.format(new Date(iso));
+/** ISO hour bucket (UTC) → "Mon, Nov 16, 09:00". */
+export const formatLongHour = (iso: string) => longHour.format(new Date(iso));

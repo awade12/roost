@@ -94,6 +94,9 @@ export function GameCard({ orgId, game, role }: { orgId: string; game: Game; rol
       <header className="flex h-11 items-center gap-2 px-4">
         <h2 className="text-sm font-medium">{game.name}</h2>
         <span className="flex-1 font-mono text-xs text-muted">{game.slug}</span>
+        <Link to="/settings/games/$gameId" params={{ gameId: game.id }} search={{ setup: true }} className="text-xs text-fg hover:underline">
+          Set up in your game
+        </Link>
         <Link to="/settings/games/$gameId" params={{ gameId: game.id }} className="text-xs text-muted hover:text-fg">
           Settings →
         </Link>

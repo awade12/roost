@@ -95,3 +95,14 @@ export async function addEnvironment(db: Db, gameId: string, name: string) {
     .returning({ id: environments.id, name: environments.name });
   return env ?? null;
 }
+
+/** Game and environment names for an environment id (for setup guides and the CLI). */
+export async function environmentInfo(db: Db, environmentId: string) {
+  const [row] = await db
+    .select({ game: games.name, environment: environments.name })
+    .from(environments)
+    .innerJoin(games, eq(games.id, environments.gameId))
+    .where(eq(environments.id, environmentId))
+    .limit(1);
+  return row ?? null;
+}

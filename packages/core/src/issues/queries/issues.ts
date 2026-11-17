@@ -1,5 +1,5 @@
 import { environments, games, issueActivity, issues, type Db } from "@roost/db";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 export type IssueStatus = "unresolved" | "resolved" | "ignored";
 
@@ -76,4 +76,11 @@ export async function issueBadgeCounts(db: Db, environmentId: string, now = new 
     .from(issues)
     .where(and(eq(issues.environmentId, environmentId), eq(issues.status, "unresolved")));
   return { regressed: Number(row?.regressed ?? 0), new: Number(row?.fresh ?? 0) };
+}
+
+/** Issue numbers by id, for linking crash rows to their issue. */
+export async function issueNumbers(db: Db, ids: string[]): Promise<Map<string, number>> {
+  if (ids.length === 0) return new Map();
+  const rows = await db.select({ id: issues.id, number: issues.number }).from(issues).where(inArray(issues.id, ids));
+  return new Map(rows.map((r) => [r.id, r.number]));
 }

@@ -31,7 +31,7 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
 }
 
 /** First-run guide, shown until a game has sent its first events. */
-export function GetStarted() {
+export function GetStarted({ gameId }: { gameId?: string | undefined }) {
   return (
     <Card>
       <CardHeader title="Send your first events" />
@@ -46,9 +46,19 @@ export function GetStarted() {
           </p>
         </Step>
         <Step n={2} title="Add the SDK to your game">
-          <pre className="overflow-x-auto rounded-md border border-border bg-bg p-3 font-mono text-xs leading-5 text-fg">
-            {SNIPPET}
-          </pre>
+          {gameId && (
+            <p className="text-muted">
+              Easiest:{" "}
+              <Link to="/settings/games/$gameId" params={{ gameId }} search={{ setup: true }} className="text-fg underline underline-offset-2 hover:text-white">
+                get setup files
+              </Link>{" "}
+              (ROOST.md for your coding agent, for Expo, web or Rust) and hand them to Claude Code or Cursor.
+            </p>
+          )}
+          <details className="text-muted">
+            <summary className="cursor-pointer">Or by hand (Expo)</summary>
+            <pre className="mt-2 overflow-x-auto rounded-md border border-border bg-bg p-3 font-mono text-xs leading-5 text-fg">{SNIPPET}</pre>
+          </details>
         </Step>
         <Step n={3} title="Play a session">
           <p className="text-muted">Events show up here within a few seconds.</p>

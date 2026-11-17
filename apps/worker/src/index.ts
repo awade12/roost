@@ -1,9 +1,10 @@
 import { createClickhouse } from "@roost/clickhouse";
-import { email } from "@roost/core";
+import { email, storage } from "@roost/core";
 import { createDb } from "@roost/db";
 import { PgBoss } from "pg-boss";
 import { loadEnv, type Env } from "./env.ts";
 import { registerJobs } from "./jobs/index.ts";
+import { startSymbolication } from "./jobs/symbolicate.ts";
 
 const env = loadEnv();
 const { db, pool } = createDb(env.DATABASE_URL);
@@ -20,9 +21,11 @@ function mailerFrom(e: Env): email.Mailer | null {
 
 await boss.start();
 await registerJobs(boss, { db, ch, secret: env.AUTH_SECRET, mailer: mailerFrom(env), dashboardUrl: env.DASHBOARD_URL ?? null });
+const stopSymbolication = startSymbolication({ db, ch, storage: storage.createS3Storage(env), stackwalkBin: env.MINIDUMP_STACKWALK });
 console.log(JSON.stringify({ msg: "roost worker started" }));
 
 async function shutdown() {
+  stopSymbolication();
   await boss.stop();
   await pool.end();
   await ch.close();

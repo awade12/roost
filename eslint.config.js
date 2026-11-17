@@ -41,7 +41,8 @@ export default tseslint.config(
   },
   {
     // Worker logs JSON lines to stdout until it gets pino; scripts print results.
-    files: ["apps/worker/**", "scripts/**"],
+    // Command-line tools: printing is their output.
+    files: ["apps/worker/**", "scripts/**", "packages/cli/**"],
     rules: { "no-console": "off" },
   },
   {

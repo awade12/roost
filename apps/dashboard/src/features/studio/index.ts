@@ -5,3 +5,4 @@ export { GamesPage } from "./components/games/GamesPage.tsx";
 export { gamesKey } from "./api/use-games.ts";
 export { useGames, type Environment, type Game } from "./api/use-games.ts";
 export { selectEnvironment } from "./api/selected-environment.ts";
+export { useCreateKey } from "./api/use-studio-mutations.ts";

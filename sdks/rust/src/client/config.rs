@@ -23,11 +23,14 @@ pub struct Config {
     pub(crate) flush_interval: Duration,
     pub(crate) timeout: Duration,
     pub(crate) capture_panics: bool,
+    pub(crate) config_refresh: Duration,
     pub(crate) max_breadcrumbs: usize,
     pub(crate) in_app: Vec<String>,
     pub(crate) before_send: Option<BeforeSend>,
     pub(crate) attachments: Option<AttachmentsFn>,
     pub(crate) transport: Option<Arc<dyn Transport>>,
+    #[cfg(feature = "native-crashes")]
+    pub(crate) native_crashes: bool,
 }
 
 impl Config {
@@ -52,11 +55,14 @@ impl Config {
             flush_interval: Duration::from_secs(10),
             timeout: Duration::from_secs(10),
             capture_panics: true,
+            config_refresh: Duration::from_secs(300),
             max_breadcrumbs: 50,
             in_app: Vec::new(),
             before_send: None,
             attachments: None,
             transport: None,
+            #[cfg(feature = "native-crashes")]
+            native_crashes: false,
         }
     }
 
@@ -100,6 +106,12 @@ impl Config {
     }
 
     /// Report panics automatically. Default true.
+    /// How often flags are re-fetched. Default 5 minutes; an unchanged config is one tiny 304.
+    pub fn config_refresh(mut self, every: Duration) -> Self {
+        self.config_refresh = every.max(Duration::from_secs(10));
+        self
+    }
+
     pub fn capture_panics(mut self, on: bool) -> Self {
         self.capture_panics = on;
         self
@@ -132,6 +144,16 @@ impl Config {
     /// Up to 5 files, 10 MB each; panics keep 2 MB in total. Must not panic.
     pub fn attachments(mut self, f: impl Fn() -> Vec<Attachment> + Send + Sync + 'static) -> Self {
         self.attachments = Some(Arc::new(f));
+        self
+    }
+
+    /// Capture hard crashes (segfaults, aborts, stack overflows) as minidumps, sent on the
+    /// next launch. Needs `data_dir`, and `roost_sdk::native::run_monitor_if_requested()`
+    /// first thing in `main`: the game re-launches itself as the process that writes the dump.
+    /// If the monitor can't start, the game carries on without native capture. Default off.
+    #[cfg(feature = "native-crashes")]
+    pub fn native_crashes(mut self, on: bool) -> Self {
+        self.native_crashes = on;
         self
     }
 

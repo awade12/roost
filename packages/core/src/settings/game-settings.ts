@@ -7,7 +7,7 @@ export async function getGameSettings(db: Db, gameId: string): Promise<GameSetti
   return parseSettings(row?.settings);
 }
 
-export async function saveGameSettings(db: Db, gameId: string, settings: GameSettings, userId: string): Promise<GameSettings> {
+export async function saveGameSettings(db: Db, gameId: string, settings: GameSettings, userId: string | null): Promise<GameSettings> {
   await db
     .insert(gameSettings)
     .values({ gameId, settings, updatedBy: userId })

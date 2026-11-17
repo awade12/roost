@@ -3,10 +3,10 @@ import { MAX_ATTACHMENT_BYTES, PlayerReportBodySchema } from "@roost/contracts";
 import { reports } from "@roost/core";
 import { Hono } from "hono";
 import { z } from "zod";
-import type { AppDeps } from "../../app.ts";
-import { limitBody, ONE_MB } from "../../http/body-limit.ts";
-import { requireKey, type KeyVars } from "../../http/client-key.ts";
-import { AppError } from "../../http/errors.ts";
+import type { AppDeps } from "../../../app.ts";
+import { limitBody, ONE_MB } from "../../../http/body-limit.ts";
+import { requireKey, type KeyVars } from "../../../http/client-key.ts";
+import { AppError } from "../../../http/errors.ts";
 import { receiveAttachment } from "./crashes.ts";
 
 const AttachmentParams = z.object({ reportId: z.uuid(), attachmentId: z.uuid() });
