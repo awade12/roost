@@ -248,4 +248,4 @@ send through the engine's own HTTP stack, a proxy, or a fake in tests, and pass 
 ## License
 
 MIT, see `LICENSE`. The Roost server itself is under a different license (FSL-1.1-ALv2);
-see the Roost repository.
+see the [Roost repository](https://github.com/awade12/roost).
