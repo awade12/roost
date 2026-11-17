@@ -1,4 +1,4 @@
-import { integer, pgTable, real, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import { integer, jsonb, pgTable, real, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 import { games } from "./studio/games.ts";
 
 /**
@@ -39,3 +39,26 @@ export const aiSettings = pgTable("ai_settings", {
   playerPerMinute: integer("player_per_minute").notNull().default(10),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Server-side decision templates (OpenRouter's Decisions API). Games call one by name with a
+ * piece of state; the questions (yes/no, choice, score) and model live here.
+ */
+export const aiDecisions = pgTable(
+  "ai_decisions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    gameId: uuid("game_id")
+      .notNull()
+      .references(() => games.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    /** Bumped on every real edit; logged with each call like template versions. */
+    version: integer("version").notNull().default(1),
+    model: text("model").notNull(),
+    /** The questions object sent to OpenRouter, validated by DecisionBodySchema on the way in. */
+    questions: jsonb("questions").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique().on(t.gameId, t.name)],
+);

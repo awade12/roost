@@ -14,6 +14,7 @@ describe("SDK wire types match @roost/contracts", () => {
     same<Same<W.Crash, C.Crash>>();
     same<Same<W.PlayerReport, C.PlayerReport>>();
     same<Same<W.AiRunResponse, C.AiRunResponse>>();
+    same<Same<W.AiDecideResponse, C.AiDecideResponse>>();
     same<Same<W.ConfigResponse, C.ConfigResponse>>();
     same<Same<W.FlagType, C.FlagType>>();
     // The API's error codes are a closed list; the SDK reads any string so new codes don't break it.

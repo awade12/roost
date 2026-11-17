@@ -16,6 +16,30 @@ export const TemplateBodySchema = z.object({
   temperature: z.number().min(0).max(2).default(0.7),
 });
 
+const QuestionKeySchema = z.string().min(1).max(64).regex(/^[a-z][a-z0-9_]*$/, "snake_case");
+const instructions = z.string().min(1).max(2000);
+const countBetween = (min: number, max: number) => (o: object) => Object.keys(o).length >= min && Object.keys(o).length <= max;
+
+/**
+ * One question of a decision template (OpenRouter Decisions API). `noul` is a yes/no
+ * probability, `choice` picks one of the keys in `criteria`, `score` rates on the ordered scale.
+ */
+export const DecisionQuestionSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("noul"), instructions, criteria: z.object({ true: z.string().min(1).max(500), false: z.string().min(1).max(500) }).optional() }),
+  z.object({
+    type: z.literal("choice"),
+    instructions,
+    criteria: z.record(QuestionKeySchema, z.string().min(1).max(500)).refine(countBetween(2, 50), "2 to 50 choices"),
+  }),
+  z.object({ type: z.literal("score"), instructions, criteria: z.array(z.string().min(1).max(500)).min(2).max(10) }),
+]);
+
+/** A server-side decision template: a decision model and the questions it answers about a state. */
+export const DecisionBodySchema = z.object({
+  model: ModelIdSchema,
+  questions: z.record(QuestionKeySchema, DecisionQuestionSchema).refine(countBetween(1, 20), "1 to 20 questions"),
+});
+
 /** Everything about a flag except its key and type, which never change once games read it. */
 export const FlagFieldsSchema = z.object({
   description: z.string().trim().max(500).default(""),
@@ -40,11 +64,15 @@ export const AiLimitsSchema = z.object({
  */
 export const RoostConfigSchema = z.object({
   templates: z.record(TemplateNameSchema, TemplateBodySchema).default({}),
+  /** Decision templates (added with AI decisions). Like templates, they belong to the game. */
+  decisions: z.record(TemplateNameSchema, DecisionBodySchema).default({}),
   flags: z.record(FlagKeySchema, FlagBodySchema).default({}),
   aiLimits: AiLimitsSchema.optional(),
 });
 
 export type TemplateBody = z.infer<typeof TemplateBodySchema>;
+export type DecisionQuestion = z.infer<typeof DecisionQuestionSchema>;
+export type DecisionBody = z.infer<typeof DecisionBodySchema>;
 export type FlagBody = z.infer<typeof FlagBodySchema>;
 export type FlagFields = z.infer<typeof FlagFieldsSchema>;
 export type AiLimitsBody = z.infer<typeof AiLimitsSchema>;

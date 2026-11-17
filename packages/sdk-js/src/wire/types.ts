@@ -78,6 +78,13 @@ export type PlayerReport = ReportExtras & {
 
 export type AiRunResponse = { text: string; model: string; usage: { tokensIn: number; tokensOut: number } };
 
+export type DecisionAnswer =
+  | { type: "noul"; noul: number }
+  | { type: "choice"; choice: string; confidence: number; probabilities: Record<string, number> }
+  | { type: "score"; score: number; confidence: number; probabilities: Record<string, number>; legend: Record<string, string> };
+
+export type AiDecideResponse = { answers: Record<string, DecisionAnswer>; model: string; usage: { tokensIn: number; tokensOut: number } };
+
 export type ErrorBody = { error: { code: string; message: string } };
 
 export type FlagType = "boolean" | "string" | "number" | "json";

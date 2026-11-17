@@ -196,6 +196,26 @@ const answer = await roost.aiStream("npc_chat", { name: "Ada" }, {
 });
 ```
 
+### Decisions
+
+A decision template asks a decision model (such as `liquid/d1.2`) fixed questions about some
+state: `noul` (yes/no probability), `choice` (one of a set) or `score` (a point on a scale).
+Define it under `decisions` in `roost.config.json` and `roost push`, then call it by name with
+free text or named fields. It throws `RoostAiError` like `ai`, so keep a fallback.
+
+```ts
+// roost.config.json → "decisions": { "message_kind": { "model": "liquid/d1.2", "questions": {
+//   "kind": { "type": "choice", "instructions": "What kind of message is this?",
+//             "criteria": { "hi": "A greeting", "vent": "Letting off steam", "joke": "Trying to be funny" } } } } }
+try {
+  const { answers } = await roost.decide("message_kind", { message: text, to: "Mum" });
+  const kind = answers.kind?.type === "choice" ? answers.kind.choice : "hi";
+  react(kind);
+} catch {
+  react(guessKindLocally(text)); // rate limited or offline
+}
+```
+
 ## Offline behaviour
 
 - Events are queued in `storage` and sent in batches; a failed send keeps them for the next

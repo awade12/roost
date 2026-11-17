@@ -10,6 +10,10 @@ Rules: see "Changelog" in `SPEC.md`.
 ## [Unreleased]
 
 ### Added
+- **api** AI decisions: `POST /v1/ai/decide {decision, state, playerId}` runs a decision template (OpenRouter's Decisions API, e.g. `liquid/d1.2`) by name and returns typed answers: `noul` (yes probability), `choice` (pick, confidence, probabilities) and `score` (score, confidence, probabilities, legend). Client keys allowed; the same per-player and per-game AI limits apply, and every call is logged under the decision's name so spend caps and usage count it. Decision models don't work through `/v1/ai/run`. Additive.
+- **api** Config as code: `decisions` in `roost.config.json` (model plus up to 20 questions), pushed and pruned like templates (`kind: "decision"` in the changes, `dry_run` honoured, versions bump only on a real change) and returned by `GET /v1/manage/config`, so `roost pull` writes them back.
+- **repo** The setup guide (`ROOST.md`) for Expo and web explains decisions and `roost.decide`.
+- **dashboard** The AI page lists decision templates (read-only) with their version, model, questions and 30-day usage.
 - **infra** `infra/deploy.sh` upgrades a server in one step: builds while the old containers serve, backs up, swaps, waits for health, and rolls back to the previous commit if anything fails. `.github/workflows/deploy.yml` runs it over SSH when CI passes on `main` (setup in DEPLOY.md, "Automatic deploys").
 - **infra** `infra/docker-compose.behind-proxy.yml` runs Roost on a server that already has a reverse proxy on 80/443: Roost's Caddy serves HTTP on `127.0.0.1:8790` and keeps the player's IP from `X-Forwarded-For` (`ROOST_TRUSTED_PROXIES`). See DEPLOY.md.
 - **infra** The API can run as several replicas (`roost up -d --scale api=2`): Caddy now finds every `api` container and round-robins between them.

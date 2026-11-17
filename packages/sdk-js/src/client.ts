@@ -1,6 +1,6 @@
-import type { AiRunResponse } from "./wire/index.ts";
+import type { AiDecideResponse, AiRunResponse } from "./wire/index.ts";
 import { MAX_EVENTS_PER_BATCH } from "@roost/contracts/limits";
-import { runAi, streamAi, type AiOptions, type AiVars } from "./ai/index.ts";
+import { runAi, runDecision, streamAi, type AiOptions, type AiVars, type DecisionState } from "./ai/index.ts";
 import { CrashReporter, installHandlers, Scope, type BreadcrumbInput, type CaptureOptions } from "./crash/index.ts";
 import { createProvider, FlagStore } from "./flags/index.ts";
 import { EventQueue } from "./queue.ts";
@@ -147,6 +147,14 @@ export class Roost {
   /** Like `ai`, but text arrives as it's written: `onDelta` gets each piece (for typewriter dialogue). */
   aiStream(template: string, vars: AiVars, options: AiOptions & { onDelta: (text: string) => void }): Promise<AiRunResponse> {
     return streamAi(this.opts, template, vars, options);
+  }
+
+  /**
+   * Runs a decision template (a server-side set of yes/no, choice and score questions) on some
+   * state, e.g. to classify what a player wrote. Throws `RoostAiError` on failure like `ai`.
+   */
+  decide(decision: string, state: DecisionState): Promise<AiDecideResponse> {
+    return runDecision(this.opts, decision, state);
   }
 
   async stop(): Promise<void> {

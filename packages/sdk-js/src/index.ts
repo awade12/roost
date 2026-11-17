@@ -1,4 +1,5 @@
-export { RoostAiError, type AiOptions, type AiVars } from "./ai/index.ts";
+export { RoostAiError, type AiOptions, type AiVars, type DecisionState } from "./ai/index.ts";
+export type { AiDecideResponse, DecisionAnswer } from "./wire/index.ts";
 export { Roost } from "./client.ts";
 export { uuid } from "./ids/index.ts";
 export type { Attachment, BreadcrumbInput, CaptureOptions } from "./crash/index.ts";

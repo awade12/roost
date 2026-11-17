@@ -1,0 +1,13 @@
+CREATE TABLE "ai_decisions" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"game_id" uuid NOT NULL,
+	"name" text NOT NULL,
+	"version" integer DEFAULT 1 NOT NULL,
+	"model" text NOT NULL,
+	"questions" jsonb NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "ai_decisions_game_id_name_unique" UNIQUE("game_id","name")
+);
+--> statement-breakpoint
+ALTER TABLE "ai_decisions" ADD CONSTRAINT "ai_decisions_game_id_games_id_fk" FOREIGN KEY ("game_id") REFERENCES "public"."games"("id") ON DELETE cascade ON UPDATE no action;
