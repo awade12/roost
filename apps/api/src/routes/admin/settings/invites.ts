@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import type { AppDeps } from "../../../app.ts";
 import { AppError } from "../../../http/errors.ts";
-import { createLimiter } from "../../../http/rate-limit.ts";
+import { createLimiter } from "../../../http/rate-limit/index.ts";
 import { invalid, OrgParam, requireOrgRole } from "../access.ts";
 import { requireSession, type SessionVars } from "../auth/index.ts";
 import { publicOrigin } from "../../shared/origin.ts";
@@ -13,11 +13,10 @@ const NewInvite = z.object({ email: z.email().max(254), role: z.enum(["owner", "
 const InviteParam = OrgParam.extend({ inviteId: z.uuid() });
 const TokenParam = z.object({ token: z.string().min(16).max(128) });
 
-/** Invite emails per studio per hour: enough for a team, not for spamming. */
-const inviteLimiter = createLimiter({ limit: 30, windowMs: 60 * 60_000 });
-
 /** Inviting people to a studio (owners) and accepting an invite (the invited person, signed in). */
-export function inviteRoutes({ db, auth: authDeps, linear }: AppDeps) {
+export function inviteRoutes({ db, auth: authDeps, linear, rateLimits }: AppDeps) {
+  // Invite emails per studio per hour: enough for a team, not for spamming.
+  const inviteLimiter = createLimiter(rateLimits, { name: "invite", limit: 30, windowMs: 60 * 60_000 });
   return new Hono<{ Variables: SessionVars }>()
     .use(requireSession(db))
     .get("/orgs/:orgId/invites", zValidator("param", OrgParam, invalid), async (c) => {
@@ -30,7 +29,7 @@ export function inviteRoutes({ db, auth: authDeps, linear }: AppDeps) {
       await requireOrgRole(db, c.get("userId"), orgId, "owner");
       const { email, role } = c.req.valid("json");
       if (await invites.isMember(db, orgId, email)) throw new AppError("conflict", "That person is already in the studio");
-      inviteLimiter.hit(orgId);
+      await inviteLimiter.hit(orgId);
       const me = await auth.getMe(db, c.get("userId"));
       const studioName = me?.orgs.find((o) => o.id === orgId)?.name ?? "a studio";
       const { invite, token } = await invites.createInvite(db, orgId, email, role, c.get("userId"));

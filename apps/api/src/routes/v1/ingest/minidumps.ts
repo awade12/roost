@@ -14,12 +14,12 @@ const DumpParam = z.object({ id: z.uuid() });
  * Native crashes from the Rust SDK's crash monitor: the report first, then the dump.
  * Stackwalking is slow, so the worker does it and groups the crash afterwards.
  */
-export function minidumpRoutes({ db, storage }: AppDeps) {
+export function minidumpRoutes({ db, rateLimits, storage }: AppDeps) {
   return new Hono<{ Variables: KeyVars }>()
     .post(
       "/minidumps",
       limitBody(ONE_MB),
-      requireKey(db),
+      requireKey({ db, rateLimits }),
       zValidator("json", MinidumpBodySchema, (result) => {
         if (!result.success) throw new AppError("bad_request", `Invalid minidump report: ${result.error.issues[0]?.path.join(".")} ${result.error.issues[0]?.message}`);
       }),
@@ -31,7 +31,7 @@ export function minidumpRoutes({ db, storage }: AppDeps) {
     .put(
       "/minidumps/:id/dump",
       limitBody(MAX_MINIDUMP_BYTES),
-      requireKey(db),
+      requireKey({ db, rateLimits }),
       zValidator("param", DumpParam, (result) => {
         if (!result.success) throw new AppError("bad_request", "Invalid minidump id");
       }),

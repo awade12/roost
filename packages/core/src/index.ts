@@ -8,6 +8,7 @@ export * as ingest from "./ingest/index.ts";
 export * as integrations from "./integrations/index.ts";
 export * as invites from "./invites/index.ts";
 export * as issues from "./issues/index.ts";
+export * as rateLimits from "./rate-limits/index.ts";
 export * as reports from "./reports/index.ts";
 export * as settings from "./settings/index.ts";
 export * as storage from "./storage/index.ts";

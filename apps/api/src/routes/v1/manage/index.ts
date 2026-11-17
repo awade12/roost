@@ -11,7 +11,7 @@ import { manageItemRoutes } from "./items.ts";
  */
 export function manageRoutes(deps: AppDeps) {
   return new Hono<{ Variables: KeyVars }>()
-    .use("/manage/*", limitBody(ONE_MB), requireKey(deps.db), requireServerKey())
+    .use("/manage/*", limitBody(ONE_MB), requireKey(deps), requireServerKey())
     .route("/", manageConfigRoutes(deps))
     .route("/", manageItemRoutes(deps));
 }

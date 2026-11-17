@@ -13,13 +13,13 @@ import { AppError } from "../../../http/errors.ts";
 const AttachmentParams = z.object({ crashId: z.uuid(), attachmentId: z.uuid() });
 const Filename = z.string().min(1).max(128);
 
-export function crashRoutes({ db, ch, storage }: AppDeps) {
+export function crashRoutes({ db, rateLimits, ch, storage }: AppDeps) {
   return (
     new Hono<{ Variables: KeyVars }>()
       .post(
         "/crashes",
         limitBody(ONE_MB),
-        requireKey(db),
+        requireKey({ db, rateLimits }),
         zValidator("json", CrashBatchSchema, (result) => {
           if (!result.success)
             throw new AppError(
@@ -44,7 +44,7 @@ export function crashRoutes({ db, ch, storage }: AppDeps) {
       .put(
         "/crashes/:crashId/attachments/:attachmentId",
         limitBody(MAX_ATTACHMENT_BYTES),
-        requireKey(db),
+        requireKey({ db, rateLimits }),
         zValidator("param", AttachmentParams, (result) => {
           if (!result.success) throw new AppError("bad_request", "Invalid attachment id");
         }),

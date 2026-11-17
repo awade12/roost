@@ -4,10 +4,12 @@ import type { Db } from "@roost/db";
 import type { PgBoss } from "pg-boss";
 import { registerAlerts } from "./alerts.ts";
 import { registerHeartbeat } from "./heartbeat.ts";
+import { registerRateLimitPrune } from "./rate-limits.ts";
 
 export type JobDeps = { db: Db; ch: Clickhouse; secret: string; mailer: email.Mailer | null; dashboardUrl: string | null };
 
 export async function registerJobs(boss: PgBoss, deps: JobDeps): Promise<void> {
   await registerHeartbeat(boss);
   await registerAlerts(boss, deps);
+  await registerRateLimitPrune(boss, deps.db);
 }

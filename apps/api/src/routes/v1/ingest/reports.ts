@@ -12,12 +12,12 @@ import { receiveAttachment } from "./crashes.ts";
 const AttachmentParams = z.object({ reportId: z.uuid(), attachmentId: z.uuid() });
 
 /** Player bug reports from inside the game. Additive to /v1 like everything here. */
-export function reportRoutes({ db, storage }: AppDeps) {
+export function reportRoutes({ db, rateLimits, storage }: AppDeps) {
   return new Hono<{ Variables: KeyVars }>()
     .post(
       "/reports",
       limitBody(ONE_MB),
-      requireKey(db),
+      requireKey({ db, rateLimits }),
       zValidator("json", PlayerReportBodySchema, (result) => {
         if (!result.success) throw new AppError("bad_request", `Invalid report: ${result.error.issues[0]?.path.join(".")} ${result.error.issues[0]?.message}`);
       }),
@@ -29,7 +29,7 @@ export function reportRoutes({ db, storage }: AppDeps) {
     .put(
       "/reports/:reportId/attachments/:attachmentId",
       limitBody(MAX_ATTACHMENT_BYTES),
-      requireKey(db),
+      requireKey({ db, rateLimits }),
       zValidator("param", AttachmentParams, (result) => {
         if (!result.success) throw new AppError("bad_request", "Invalid attachment id");
       }),

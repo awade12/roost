@@ -166,9 +166,10 @@ On a new server: set up `.env` with the **same** `AUTH_SECRET` and `S3_*` values
 
 ## Scaling notes
 
-- **One API replica.** Rate limits (sign-in codes, invites, per-key requests) are kept in memory per process,
-  so two replicas would each allow the full limit. Run one `api` until they move to Postgres.
-  Startup migrations are already safe with several replicas.
+- **API replicas** can scale: `roost up -d --scale api=2`. Caddy finds every `api` container and
+  spreads requests across them. Rate limits (sign-in codes, invites, per-key requests) are counted
+  in Postgres, so all replicas share them, and startup migrations take a lock. Each replica caches
+  key lookups for 30 seconds, so a revoked key can keep working that long.
 - **Workers** can scale: `roost up -d --scale worker=2`. Jobs and the symbolication queue are
   shared through Postgres.
 - **ClickHouse** holds the high-volume data (events, AI calls, crashes). It compresses events

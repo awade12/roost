@@ -4,7 +4,7 @@ import { apiKeys, environments, type Db } from "@roost/db";
 import { and, eq, isNull } from "drizzle-orm";
 import type { MiddlewareHandler } from "hono";
 import { AppError } from "./errors.ts";
-import { createLimiter } from "./rate-limit.ts";
+import { createLimiter, type RateStore } from "./rate-limit/index.ts";
 
 export type KeyVars = {
   environmentId: string;
@@ -23,7 +23,6 @@ type Resolved = { environmentId: string; gameId: string; kind: "client" | "serve
  */
 const KEY_CACHE_MS = 30_000;
 const keyCache = new Map<string, { value: Resolved; at: number }>();
-const limiter = createLimiter({ limit: settings.DEFAULT_SETTINGS.api.requestsPerMinute, windowMs: 60_000 });
 
 export function forgetKeys(): void {
   keyCache.clear();
@@ -47,7 +46,8 @@ async function resolve(db: Db, hash: string): Promise<Resolved> {
  * Resolves X-Roost-Key to an environment and its game's settings, then applies the
  * game's switches: the API can be paused, and each key gets the game's per-minute limit.
  */
-export function requireKey(db: Db): MiddlewareHandler<{ Variables: KeyVars }> {
+export function requireKey({ db, rateLimits }: { db: Db; rateLimits: RateStore }): MiddlewareHandler<{ Variables: KeyVars }> {
+  const limiter = createLimiter(rateLimits, { name: "key", limit: settings.DEFAULT_SETTINGS.api.requestsPerMinute, windowMs: 60_000 });
   return async (c, next) => {
     const raw = c.req.header(KEY_HEADER);
     if (!raw) throw new AppError("unauthorized", "Missing X-Roost-Key header");
@@ -56,7 +56,7 @@ export function requireKey(db: Db): MiddlewareHandler<{ Variables: KeyVars }> {
     if (!key) throw new AppError("unauthorized", "Invalid or revoked key");
     const game = await settings.cachedGameSettings(db, key.gameId);
     if (!game.api.enabled) throw new AppError("forbidden", "The API is paused for this game");
-    limiter.hit(hash, game.api.requestsPerMinute);
+    await limiter.hit(hash, game.api.requestsPerMinute);
     c.set("environmentId", key.environmentId);
     c.set("gameId", key.gameId);
     c.set("keyKind", key.kind);

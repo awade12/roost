@@ -31,20 +31,20 @@ function respond(c: Context, deps: ai.RunDeps, plan: ai.Plan, stream: boolean) {
   });
 }
 
-export function aiRoutes({ db, ch, ai: aiDeps }: AppDeps) {
+export function aiRoutes({ db, rateLimits, ch, ai: aiDeps }: AppDeps) {
   const deps = { db, ch, ...aiDeps };
   const configured = () => {
     if (!deps.apiKey) throw new AppError("unavailable", "The AI proxy isn't configured on this server.");
   };
   return new Hono<{ Variables: KeyVars }>()
-    .post("/ai/run", limitBody(ONE_MB), requireKey(db), zValidator("json", AiRunSchema, invalid), async (c) => {
+    .post("/ai/run", limitBody(ONE_MB), requireKey({ db, rateLimits }), zValidator("json", AiRunSchema, invalid), async (c) => {
       configured();
       const req = c.req.valid("json");
       const plan = await ai.planTemplate(db, c.get("environmentId"), req);
       if ("ok" in plan) throw new AppError(plan.code, plan.message);
       return respond(c, deps, plan, req.stream ?? false);
     })
-    .post("/ai/complete", limitBody(ONE_MB), requireKey(db), requireServerKey(), zValidator("json", AiCompleteSchema, invalid), async (c) => {
+    .post("/ai/complete", limitBody(ONE_MB), requireKey({ db, rateLimits }), requireServerKey(), zValidator("json", AiCompleteSchema, invalid), async (c) => {
       configured();
       const req = c.req.valid("json");
       return respond(c, deps, ai.planComplete(c.get("gameId"), c.get("environmentId"), req), req.stream ?? false);

@@ -10,6 +10,7 @@ Rules: see "Changelog" in `SPEC.md`.
 ## [Unreleased]
 
 ### Added
+- **infra** The API can run as several replicas (`roost up -d --scale api=2`): Caddy now finds every `api` container and round-robins between them.
 - **api** The API applies pending Postgres and ClickHouse migrations on start, before it accepts requests, so upgrading is `git pull` and `docker compose up -d --build`. A Postgres advisory lock keeps two replicas from migrating at once. Turn it off with `MIGRATE_ON_START=false`; `pnpm db:migrate` still works.
 - **infra** Daily backups: a new `backup` service dumps Postgres (`pg_dump`, gzip) and backs up ClickHouse (`BACKUP DATABASE … TO S3`) into `s3://$S3_BUCKET/$BACKUP_PREFIX/` at `BACKUP_HOUR` UTC. `roost-backup list` and `restore postgres|clickhouse <stamp>` bring them back. Old backups are kept until an S3 lifecycle rule expires them.
 - **docs** `DEPLOY.md`: run Roost on one VPS (configuration, HTTPS, first sign-in, SDKs, upgrades, backups and restore, scaling, troubleshooting). `.env.example` now lists and explains every setting the server reads.
@@ -91,6 +92,7 @@ Rules: see "Changelog" in `SPEC.md`.
 - **docs** Product spec (`SPEC.md`): modules, project structure, code rules, changelog rules.
 
 ### Changed
+- **api** Rate limits (sign-in codes, invites, per-key requests per minute) are counted in Postgres instead of each API process's memory, so every replica shares the same limits. Counters live in a small unlogged table that the worker prunes hourly; only hashes of the keys are stored.
 - **infra** Production compose points the API and worker at the bundled Postgres and ClickHouse itself and sets `NODE_ENV=production` and port 8787, so `.env` only needs the passwords. Run it as `docker compose --env-file .env -f infra/docker-compose.yml …` from the repo root. The worker now waits until the API is healthy (migrations done).
 - **api** Debug-file uploads use the same server-key check as the management API (same error).
 - **dashboard** The game and environment picker moved from the header into the sidebar; the header shows game / page.

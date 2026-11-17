@@ -3,10 +3,9 @@ import { auth } from "@roost/core";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { AppDeps } from "../../../app.ts";
-import { clientIp } from "../../../http/rate-limit.ts";
 import { AppError } from "../../../http/errors.ts";
 import { logger } from "../../../http/logger.ts";
-import { createLimiter } from "../../../http/rate-limit.ts";
+import { clientIp, createLimiter } from "../../../http/rate-limit/index.ts";
 import { clearSessionCookie, sessionToken, setSessionCookie } from "./session.ts";
 
 const FIFTEEN_MIN = 15 * 60 * 1000;
@@ -17,16 +16,16 @@ const invalidBody = (result: { success: boolean }) => {
   if (!result.success) throw new AppError("bad_request", "Check the email and code and try again");
 };
 
-export function authRoutes({ db, auth: authDeps }: AppDeps) {
-  const sendsPerEmail = createLimiter({ limit: 3, windowMs: FIFTEEN_MIN });
-  const sendsPerIp = createLimiter({ limit: 10, windowMs: FIFTEEN_MIN });
-  const verifiesPerIp = createLimiter({ limit: 20, windowMs: FIFTEEN_MIN });
+export function authRoutes({ db, auth: authDeps, rateLimits }: AppDeps) {
+  const sendsPerEmail = createLimiter(rateLimits, { name: "otp-email", limit: 3, windowMs: FIFTEEN_MIN });
+  const sendsPerIp = createLimiter(rateLimits, { name: "otp-ip", limit: 10, windowMs: FIFTEEN_MIN });
+  const verifiesPerIp = createLimiter(rateLimits, { name: "verify-ip", limit: 20, windowMs: FIFTEEN_MIN });
 
   return new Hono()
     .post("/otp/start", zValidator("json", EmailBody, invalidBody), async (c) => {
       const { email } = c.req.valid("json");
-      sendsPerIp.hit(clientIp(c));
-      sendsPerEmail.hit(auth.normalizeEmail(email));
+      await sendsPerIp.hit(clientIp(c));
+      await sendsPerEmail.hit(auth.normalizeEmail(email));
       try {
         await auth.startOtp({ db, ...authDeps }, email);
       } catch (err) {
@@ -38,7 +37,7 @@ export function authRoutes({ db, auth: authDeps }: AppDeps) {
       return c.json({ ok: true as const });
     })
     .post("/otp/verify", zValidator("json", VerifyBody, invalidBody), async (c) => {
-      verifiesPerIp.hit(clientIp(c));
+      await verifiesPerIp.hit(clientIp(c));
       const { email, code } = c.req.valid("json");
       const user = await auth.verifyOtp({ db, secret: authDeps.secret }, email, code);
       if (!user) throw new AppError("bad_request", "That code is wrong or has expired");

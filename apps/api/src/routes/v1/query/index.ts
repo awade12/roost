@@ -7,7 +7,7 @@ import { queryIssueRoutes } from "./issues.ts";
 /** Read access to analytics and issues with a server key. Scoped to the key's environment. */
 export function queryRoutes(deps: AppDeps) {
   return new Hono<{ Variables: KeyVars }>()
-    .use("/query/*", requireKey(deps.db), requireServerKey())
+    .use("/query/*", requireKey(deps), requireServerKey())
     .route("/", queryAnalyticsRoutes(deps))
     .route("/", queryIssueRoutes(deps));
 }

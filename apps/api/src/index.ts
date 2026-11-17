@@ -6,6 +6,7 @@ import { createApp } from "./app.ts";
 import { authDepsFromEnv } from "./auth-config.ts";
 import { loadEnv } from "./env.ts";
 import { logger } from "./http/logger.ts";
+import { postgresRateStore } from "./http/rate-limit/index.ts";
 import { applyMigrations } from "./startup/migrate.ts";
 
 const env = loadEnv();
@@ -26,6 +27,7 @@ const server = serve({ fetch: createApp({
     ai: { apiKey: env.OPENROUTER_API_KEY },
     linear: { dashboardUrl: env.DASHBOARD_URL },
     sdkDir: env.SDK_DIR,
+    rateLimits: postgresRateStore(db),
   }).fetch, port: env.PORT }, (info) =>
   logger.info({ port: info.port }, "roost api listening"),
 );

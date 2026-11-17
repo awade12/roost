@@ -7,11 +7,11 @@ import { requireKey, type KeyVars } from "../../../http/client-key.ts";
 import { limitBody, ONE_MB } from "../../../http/body-limit.ts";
 import { AppError } from "../../../http/errors.ts";
 
-export function eventRoutes({ db, ch }: AppDeps) {
+export function eventRoutes({ db, rateLimits, ch }: AppDeps) {
   return new Hono<{ Variables: KeyVars }>().post(
     "/events",
     limitBody(ONE_MB),
-    requireKey(db),
+    requireKey({ db, rateLimits }),
     zValidator("json", EventBatchSchema, (result) => {
       if (!result.success) throw new AppError("bad_request", "Invalid event batch");
     }),

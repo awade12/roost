@@ -13,10 +13,10 @@ const Query = z.object({ playerId: z.string().min(1).max(64) });
  * answer is a body-less 304 until something changes. The version covers every flag, not this
  * player's values, so it's safe as a shared ETag.
  */
-export function configRoutes({ db }: AppDeps) {
+export function configRoutes({ db, rateLimits }: AppDeps) {
   return new Hono<{ Variables: KeyVars }>().get(
     "/config",
-    requireKey(db),
+    requireKey({ db, rateLimits }),
     zValidator("query", Query, (result) => {
       if (!result.success) throw new AppError("bad_request", "?playerId= is required");
     }),

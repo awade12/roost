@@ -6,6 +6,7 @@ import { requestId } from "hono/request-id";
 import type { AuthDeps } from "./auth-config.ts";
 import { isValidKey } from "./http/client-key.ts";
 import { errorResponse, onError } from "./http/errors.ts";
+import { memoryRateStore, type RateStore } from "./http/rate-limit/index.ts";
 import { adminRoutes } from "./routes/admin/index.ts";
 import { healthRoutes } from "./routes/health.ts";
 import { sdkRoutes } from "./routes/sdk.ts";
@@ -26,9 +27,12 @@ export type AppDeps = {
   alerts?: { fetch?: typeof fetch };
   /** Where `pnpm build:sdks` put the SDK packages, served under /sdk. */
   sdkDir?: string;
+  /** Rate-limit counters: Postgres in production so replicas share them; in-memory in tests. */
+  rateLimits: RateStore;
 };
 
-export function createApp(deps: AppDeps) {
+export function createApp(input: Omit<AppDeps, "rateLimits"> & { rateLimits?: RateStore }) {
+  const deps: AppDeps = { ...input, rateLimits: input.rateLimits ?? memoryRateStore() };
   return new Hono()
     .use(requestId())
     .route("/", healthRoutes)

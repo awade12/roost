@@ -5,5 +5,6 @@ export * from "./config/index.ts";
 export * from "./integrations.ts";
 export * from "./invites.ts";
 export * from "./issues/index.ts";
+export * from "./limits/index.ts";
 export * from "./studio/index.ts";
 export * from "./symbols/index.ts";

@@ -12,9 +12,9 @@ const MAX_DEBUG_FILE = 200 * 1024 * 1024;
 const MapQuery = z.object({ build: z.string().trim().min(1).max(64), name: z.string().trim().min(1).max(256) });
 
 /** Breakpad .sym files (from dump_syms) and JS source maps, per game. */
-export function debugFileRoutes({ db, storage }: AppDeps) {
+export function debugFileRoutes({ db, rateLimits, storage }: AppDeps) {
   return new Hono<{ Variables: KeyVars }>()
-    .put("/debug-files/breakpad", limitBody(MAX_DEBUG_FILE), requireKey(db),
+    .put("/debug-files/breakpad", limitBody(MAX_DEBUG_FILE), requireKey({ db, rateLimits }),
       requireServerKey(), async (c) => {
       const bytes = new Uint8Array(await c.req.arrayBuffer());
       const header = symbolication.breakpadHeader(new TextDecoder().decode(bytes.slice(0, 1024)));
@@ -25,7 +25,7 @@ export function debugFileRoutes({ db, storage }: AppDeps) {
     .put(
       "/debug-files/sourcemaps",
       limitBody(MAX_DEBUG_FILE),
-      requireKey(db),
+      requireKey({ db, rateLimits }),
       requireServerKey(),
       zValidator("query", MapQuery, (result) => {
         if (!result.success) throw new AppError("bad_request", "?build= and ?name= (the bundle file name) are required");
