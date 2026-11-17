@@ -8,6 +8,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · [SemVer](htt
 - **sdk-js** Works on Hermes (React Native) without a polyfill. The client used `crypto.randomUUID()`, which Hermes doesn't have, so `new Roost()` threw at start-up and no events were sent. It now falls back to `crypto.getRandomValues`, then `Math.random`.
 
 ### Added
+- **sdk-js** `roost.decide(decision, state)` runs a decision template (yes/no, choice and score questions kept on the server) on free text or named fields, e.g. to classify what a player wrote. Resolves with `{ answers, model, usage }`; throws `RoostAiError` on failure like `ai`.
 - **sdk-js** `uuid()`: a v4 UUID that works on every engine, for things like a per-install player id.
 - **sdk-js** Ships as a standalone package with no dependencies (own wire types, checked against the API's contracts at compile time). Install from your Roost server: `npm install <roost>/sdk/js/latest.tgz`.
 - **sdk-js** `roost.ai(template, vars, { messages, model, maxTokens, temperature })` for conversation history and per-call options, and `roost.aiStream(template, vars, { onDelta })` to show text as it's written.

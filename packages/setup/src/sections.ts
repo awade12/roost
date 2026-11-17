@@ -92,7 +92,15 @@ no AI key ships in the build. Pass earlier turns as \`messages\` for conversatio
 
 ${code(rust(s) ? "rust" : "ts", example)}
 
-Define templates in \`roost.config.json\`.`;
+Define templates in \`roost.config.json\`.${
+    rust(s)
+      ? ""
+      : `
+
+To classify or score something (e.g. what kind of message a player wrote), use a decision model
+such as \`liquid/d1.2\`: define it under \`decisions\` in \`roost.config.json\` and call
+\`roost.decide("message_kind", { message })\`. Decisions throw on failure like \`ai\`.`
+  }`;
 }
 
 export function debugFiles(s: SetupInput): string {

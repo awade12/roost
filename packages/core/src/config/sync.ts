@@ -1,16 +1,17 @@
 import type { RoostConfig } from "@roost/contracts";
 import type { Db } from "@roost/db";
-import { deleteTemplateByName, getLimits, listTemplates, saveLimits, upsertTemplate } from "../ai/index.ts";
+import { deleteDecisionByName, deleteTemplateByName, getLimits, listDecisions, listTemplates, saveLimits, upsertDecision, upsertTemplate } from "../ai/index.ts";
 import { flagValuesMatch, sameJson } from "./evaluate.ts";
 import { deleteFlagByKey, listFlags, upsertFlag } from "./flags.ts";
 
-export type SyncChange = { kind: "template" | "flag" | "aiLimits"; name: string; result: "created" | "updated" | "unchanged" | "deleted" | "error"; error?: string };
+export type SyncChange = { kind: "template" | "decision" | "flag" | "aiLimits"; name: string; result: "created" | "updated" | "unchanged" | "deleted" | "error"; error?: string };
 
-/** The game's templates and this environment's flags, in config-file shape (what `roost pull` writes). */
+/** The game's templates and decisions and this environment's flags, in config-file shape (what `roost pull` writes). */
 export async function exportConfig(db: Db, gameId: string, environmentId: string): Promise<RoostConfig> {
-  const [templates, flags, aiLimits] = await Promise.all([listTemplates(db, gameId), listFlags(db, environmentId), getLimits(db, gameId)]);
+  const [templates, decisions, flags, aiLimits] = await Promise.all([listTemplates(db, gameId), listDecisions(db, gameId), listFlags(db, environmentId), getLimits(db, gameId)]);
   return {
     templates: Object.fromEntries(templates.map((t) => [t.name, { model: t.model, fallbackModels: t.fallbackModels, systemPrompt: t.systemPrompt, userTemplate: t.userTemplate, maxTokens: t.maxTokens, temperature: t.temperature }])),
+    decisions: Object.fromEntries(decisions.map((d) => [d.name, { model: d.model, questions: d.questions }])),
     flags: Object.fromEntries(flags.map((f) => [f.key, { type: f.type, description: f.description, value: f.value, rollout: f.rollout ?? null, overrides: f.overrides }])),
     aiLimits,
   };
@@ -19,7 +20,7 @@ export async function exportConfig(db: Db, gameId: string, environmentId: string
 type Target = { db: Db; gameId: string; environmentId: string; prune: boolean; dryRun: boolean };
 
 /**
- * Applies a config file: upserts every template and flag in it and, with `prune`, deletes ones
+ * Applies a config file: upserts every template, decision and flag in it and, with `prune`, deletes ones
  * that aren't. With `dryRun` nothing is written; the result says what would change.
  */
 export async function applyConfig(t: Target, file: RoostConfig): Promise<SyncChange[]> {
@@ -30,6 +31,12 @@ export async function applyConfig(t: Target, file: RoostConfig): Promise<SyncCha
     const result = !existing ? "created" : sameJson(existing, body) ? "unchanged" : "updated";
     if (!t.dryRun && result !== "unchanged") await upsertTemplate(t.db, t.gameId, { name, ...body });
     changes.push({ kind: "template", name, result });
+  }
+  for (const [name, body] of Object.entries(file.decisions)) {
+    const existing = current.decisions[name];
+    const result = !existing ? "created" : sameJson(existing, body) ? "unchanged" : "updated";
+    if (!t.dryRun && result !== "unchanged") await upsertDecision(t.db, t.gameId, { name, ...body });
+    changes.push({ kind: "decision", name, result });
   }
   for (const [key, body] of Object.entries(file.flags)) {
     const existing = current.flags[key];
@@ -59,6 +66,10 @@ async function prune(t: Target, current: RoostConfig, file: RoostConfig): Promis
   for (const name of Object.keys(current.templates).filter((n) => !(n in file.templates))) {
     if (!t.dryRun) await deleteTemplateByName(t.db, t.gameId, name);
     out.push({ kind: "template", name, result: "deleted" });
+  }
+  for (const name of Object.keys(current.decisions).filter((n) => !(n in file.decisions))) {
+    if (!t.dryRun) await deleteDecisionByName(t.db, t.gameId, name);
+    out.push({ kind: "decision", name, result: "deleted" });
   }
   for (const key of Object.keys(current.flags).filter((k) => !(k in file.flags))) {
     if (!t.dryRun) await deleteFlagByKey(t.db, t.environmentId, key);

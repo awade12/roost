@@ -18,6 +18,15 @@ type Changes = { changes: { kind: string; name: string; result: string; error?: 
 
 const FILE = {
   templates: { npc_greeting: { model: "openai/gpt-4o-mini", userTemplate: "Greet {{name}}", systemPrompt: "Be brief." } },
+  decisions: {
+    message_kind: {
+      model: "liquid/d1.2",
+      questions: {
+        kind: { type: "choice", instructions: "What kind of message?", criteria: { hi: "A greeting", vent: "Letting off steam" } },
+        warmth: { type: "score", instructions: "How warm is it?", criteria: ["cold", "neutral", "warm"] },
+      },
+    },
+  },
   flags: {
     new_shop: { type: "boolean", value: false, rollout: { percent: 25, value: true } },
     "enemy.tuning": { type: "json", value: { hp: 100 } },
@@ -72,9 +81,9 @@ describe.skipIf(!ready)("management and query API with server keys (integration)
 
   it("applies a config file, then reports nothing to change", async () => {
     const first = await json<Changes>(call("PUT", "/manage/config", FILE));
-    expect(results(first)).toEqual({ "template:npc_greeting": "created", "flag:new_shop": "created", "flag:enemy.tuning": "created", "aiLimits:aiLimits": "updated" });
+    expect(results(first)).toEqual({ "template:npc_greeting": "created", "decision:message_kind": "created", "flag:new_shop": "created", "flag:enemy.tuning": "created", "aiLimits:aiLimits": "updated" });
     const again = await json<Changes>(call("PUT", "/manage/config", FILE));
-    expect(results(again)).toEqual({ "template:npc_greeting": "unchanged", "flag:new_shop": "unchanged", "flag:enemy.tuning": "unchanged", "aiLimits:aiLimits": "unchanged" });
+    expect(results(again)).toEqual({ "template:npc_greeting": "unchanged", "decision:message_kind": "unchanged", "flag:new_shop": "unchanged", "flag:enemy.tuning": "unchanged", "aiLimits:aiLimits": "unchanged" });
     // Games see the pushed flag straight away.
     const cfg = await json<{ flags: Record<string, { value: unknown }> }>(call("GET", "/config?playerId=p1", undefined, studio.key));
     expect(cfg.flags["enemy.tuning"]?.value).toEqual({ hp: 100 });
@@ -90,6 +99,21 @@ describe.skipIf(!ready)("management and query API with server keys (integration)
     expect(Object.keys((await json<{ flags: object }>(call("GET", "/manage/config"))).flags)).toEqual(["new_shop"]);
     const typeChange = await call("PUT", "/manage/config", { flags: { new_shop: { type: "string", value: "x" } } });
     expect(typeChange.status).toBe(422);
+  });
+
+  it("updates, previews and prunes decisions, and pulls them back", async () => {
+    type Pulled = { decisions: Record<string, { questions: Record<string, unknown> }> };
+    const kind = FILE.decisions.message_kind;
+    const edited = { decisions: { message_kind: { ...kind, questions: { ...kind.questions, is_rude: { type: "noul", instructions: "Rude?" } } } } };
+    expect(results(await json<Changes>(call("PUT", "/manage/config", edited)))).toMatchObject({ "decision:message_kind": "updated" });
+    expect(Object.keys((await json<Pulled>(call("GET", "/manage/config"))).decisions.message_kind?.questions ?? {}).sort()).toEqual(["is_rude", "kind", "warmth"]);
+    const preview = await json<Changes>(call("PUT", "/manage/config?dry_run=true&prune=true", { ...FILE, decisions: {} }));
+    expect(results(preview)).toMatchObject({ "decision:message_kind": "deleted" });
+    expect(Object.keys((await json<Pulled>(call("GET", "/manage/config"))).decisions)).toEqual(["message_kind"]);
+    await call("PUT", "/manage/config?prune=true", { ...FILE, decisions: {} });
+    expect((await json<Pulled>(call("GET", "/manage/config"))).decisions).toEqual({});
+    const bad = await call("PUT", "/manage/config", { decisions: { x: { model: "liquid/d1.2", questions: { q: { type: "box", instructions: "?" } } } } });
+    expect(bad.status).toBe(400);
   });
 
   it("manages single items and reads data", async () => {

@@ -35,8 +35,9 @@ const body = (opts: RoostOptions, template: string, vars: AiVars, o: AiOptions, 
   });
 };
 
-async function post(opts: RoostOptions, payload: string): Promise<Response> {
-  const res = await (opts.fetch ?? fetch)(`${opts.endpoint}/v1/ai/run`, {
+/** POSTs to an AI proxy route; turns an error response into RoostAiError. */
+export async function post(opts: RoostOptions, payload: string, path = "/v1/ai/run"): Promise<Response> {
+  const res = await (opts.fetch ?? fetch)(`${opts.endpoint}${path}`, {
     method: "POST",
     headers: { "content-type": "application/json", "x-roost-key": opts.clientKey },
     body: payload,

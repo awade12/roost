@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import { AiCompleteSchema, AiRunSchema, type AiRunResponse } from "@roost/contracts";
+import { AiCompleteSchema, AiDecideSchema, AiRunSchema, type AiDecideResponse, type AiRunResponse } from "@roost/contracts";
 import { ai } from "@roost/core";
 import { Hono, type Context } from "hono";
 import { streamSSE } from "hono/streaming";
@@ -48,5 +48,12 @@ export function aiRoutes({ db, rateLimits, ch, ai: aiDeps }: AppDeps) {
       configured();
       const req = c.req.valid("json");
       return respond(c, deps, ai.planComplete(c.get("gameId"), c.get("environmentId"), req), req.stream ?? false);
+    })
+    // Decision templates (OpenRouter's Decisions API): classify or score state. Client keys allowed.
+    .post("/ai/decide", limitBody(ONE_MB), requireKey({ db, rateLimits }), zValidator("json", AiDecideSchema, invalid), async (c) => {
+      const result = await ai.runDecision(deps, c.get("environmentId"), c.req.valid("json"));
+      if (!result.ok) throw new AppError(result.code, result.message);
+      const body: AiDecideResponse = { answers: result.answers, model: result.model, usage: { tokensIn: result.tokensIn, tokensOut: result.tokensOut } };
+      return c.json(body);
     });
 }

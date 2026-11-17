@@ -233,6 +233,14 @@ attach a common context (game, build, platform, device, session, player).
 - Usage log per call: game, player, template, model, tokens in/out, cost, latency,
   status. Cost dashboards per game/template/model.
 - Streaming via SSE.
+- **Decision templates:** classification and scoring through OpenRouter's Decisions API
+  (alpha, `POST /api/alpha/decisions`; decision models like `liquid/d1.2` reject chat
+  completions). A decision is a model plus up to 20 named questions (`noul` yes/no,
+  `choice`, `score`), stored per game in `ai_decisions`, versioned and synced as `decisions`
+  in `roost.config`. Games call `POST /v1/ai/decide {decision, state, playerId}` (client
+  keys allowed) with free text or named fields as `state`; the answers come back typed. Same
+  limits and `ai_calls` logging as templates (logged under the decision's name). Image
+  (`box`) questions aren't supported.
 
 ### 3. Bug Reports + Crashes (v1)
 - **Player reports:** `POST /v1/reports` — text, category, screenshot, logs,

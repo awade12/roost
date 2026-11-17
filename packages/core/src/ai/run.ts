@@ -2,10 +2,11 @@ import type { Clickhouse } from "@roost/clickhouse";
 import type { AiComplete, AiRun } from "@roost/contracts";
 import type { Db } from "@roost/db";
 import { renderTemplate } from "./render.ts";
-import { getLimits, loadTemplate } from "./templates/index.ts";
+import { checkLimits } from "./limits.ts";
+import { loadTemplate } from "./templates/index.ts";
 import { chat, UpstreamError, type ChatMessage } from "./upstream/openrouter.ts";
 import { chatStream } from "./upstream/stream.ts";
-import { limitCounters, logCall, type CallLog } from "./usage.ts";
+import { logCall, type CallLog } from "./usage.ts";
 
 export type RunDeps = { db: Db; ch: Clickhouse; apiKey: string | undefined; fetch?: typeof fetch };
 
@@ -22,15 +23,6 @@ export type OnDelta = (text: string) => void | Promise<void>;
 export type Plan = { models: string[]; messages: ChatMessage[]; maxTokens: number; temperature: number; log: Omit<CallLog, "status" | "model"> };
 
 export const fail = (code: Failure["code"], message: string): Failure => ({ ok: false, code, message });
-
-/** Per-minute, per-player daily and per-game monthly limits. Returns the refusal, if any. */
-async function checkLimits(deps: RunDeps, gameId: string, playerId: string) {
-  const [limits, counters] = await Promise.all([getLimits(deps.db, gameId), limitCounters(deps.ch, gameId, playerId)]);
-  if (counters.playerCallsLastMinute >= limits.playerPerMinute) return { status: "rate_limited" as const, message: "Too many AI requests from this player. Try again in a minute." };
-  if (counters.playerTokensToday >= limits.playerDailyTokens) return { status: "over_budget" as const, message: "This player has used today's AI budget." };
-  if (counters.spendUsd * 100 >= limits.monthlyCapCents) return { status: "over_cap" as const, message: "This game has reached its monthly AI spend cap." };
-  return null;
-}
 
 /**
  * Runs a plan: checks limits, calls OpenRouter (streaming if `onDelta` is given) and logs

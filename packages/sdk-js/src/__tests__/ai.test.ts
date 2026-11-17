@@ -38,4 +38,20 @@ describe("AI proxy calls", () => {
     expect(error).toBeInstanceOf(RoostAiError);
     expect((error as RoostAiError).code).toBe("rate_limited");
   });
+
+  it("decides: posts the decision and state, returns the answers", async () => {
+    const answers = { kind: { type: "choice", choice: "vent", confidence: 0.8, probabilities: { vent: 0.8, hi: 0.2 } } };
+    const { roost, fetch } = client(() => new Response(JSON.stringify({ answers, model: "m", usage: { tokensIn: 5, tokensOut: 1 } })));
+    const result = await roost.decide("message_kind", { message: "ugh, work", to: "Mum" });
+    expect(String(fetch.mock.calls[0]?.[0])).toBe("https://roost.test/v1/ai/decide");
+    expect(sent(fetch)).toEqual({ decision: "message_kind", state: { message: "ugh, work", to: "Mum" }, playerId: "p1" });
+    expect(result.answers.kind).toEqual(answers.kind);
+  });
+
+  it("turns a failed decision into RoostAiError", async () => {
+    const { roost } = client(() => new Response(JSON.stringify({ error: { code: "not_found", message: "No AI decision" } }), { status: 404 }));
+    const error = await roost.decide("nope", "hi").catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(RoostAiError);
+    expect((error as RoostAiError).code).toBe("not_found");
+  });
 });
