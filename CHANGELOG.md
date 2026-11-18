@@ -10,6 +10,7 @@ Rules: see "Changelog" in `SPEC.md`.
 ## [Unreleased]
 
 ### Added
+- **dashboard** The AI page has a Costs switch, Rounded or Exact: Exact shows every cost on the page (monthly spend and each template) down to a millionth of a dollar, since most calls cost a fraction of a cent. Remembered in this browser.
 - **api** AI decisions: `POST /v1/ai/decide {decision, state, playerId}` runs a decision template (OpenRouter's Decisions API, e.g. `liquid/d1.2`) by name and returns typed answers: `noul` (yes probability), `choice` (pick, confidence, probabilities) and `score` (score, confidence, probabilities, legend). Client keys allowed; the same per-player and per-game AI limits apply, and every call is logged under the decision's name so spend caps and usage count it. Decision models don't work through `/v1/ai/run`. Additive.
 - **api** Config as code: `decisions` in `roost.config.json` (model plus up to 20 questions), pushed and pruned like templates (`kind: "decision"` in the changes, `dry_run` honoured, versions bump only on a real change) and returned by `GET /v1/manage/config`, so `roost pull` writes them back.
 - **repo** The setup guide (`ROOST.md`) for Expo and web explains decisions and `roost.decide`.

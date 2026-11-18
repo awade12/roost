@@ -1,13 +1,15 @@
 import { Button } from "../../../components/ui/index.ts";
 import { Card, CardHeader } from "../../../components/ui/index.ts";
 import { EmptyState } from "../../../components/ui/index.ts";
-import { formatNumber, formatUsd } from "../../../lib/format.ts";
+import { formatNumber } from "../../../lib/format.ts";
+import { useCostFormat } from "../api/cost-precision.ts";
 import type { AiData, AiTemplate } from "../api/use-ai.ts";
 
 type Props = { data: AiData; canEdit: boolean; onEdit: (t: AiTemplate | null) => void };
 type Usage = AiData["usage"]["byTemplate"][number];
 
 function Row({ t, usage: u, canEdit, onEdit }: { t: AiTemplate; usage: Usage | undefined; canEdit: boolean; onEdit: Props["onEdit"] }) {
+  const cost = useCostFormat();
   return (
     <tr className="h-11 border-b border-border last:border-0 hover:bg-hover [&>td]:px-4">
       <td>
@@ -21,7 +23,7 @@ function Row({ t, usage: u, canEdit, onEdit }: { t: AiTemplate; usage: Usage | u
       <td className="text-right font-mono text-xs">
         {formatNumber(u?.tokensIn ?? 0)} / {formatNumber(u?.tokensOut ?? 0)}
       </td>
-      <td className="text-right font-mono text-xs">{formatUsd(u?.costUsd ?? 0)}</td>
+      <td className="text-right font-mono text-xs">{cost(u?.costUsd ?? 0)}</td>
       <td className={`text-right font-mono text-xs ${u?.errors ? "text-danger" : ""}`}>{formatNumber(u?.errors ?? 0)}</td>
       <td className="text-right">
         {canEdit && (

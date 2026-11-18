@@ -14,6 +14,9 @@ export const formatPercent = (ratio: number, digits = 1) => `${(ratio * 100).toF
 export const formatChange = (ratio: number) => `${ratio >= 0 ? "+" : "−"}${Math.abs(ratio * 100).toFixed(1)}%`;
 const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 });
 export const formatUsd = (n: number) => usd.format(n);
+const usdExact = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 6 });
+/** Down to a millionth of a dollar, for costs under a cent ("$0.001018"); whole cents stay "$0.01". */
+export const formatUsdExact = (n: number) => usdExact.format(n);
 const rtf = new Intl.RelativeTimeFormat("en-US", { numeric: "auto", style: "short" });
 /** "3 min. ago", "2 days ago". */
 export function formatAgo(date: string | Date): string {

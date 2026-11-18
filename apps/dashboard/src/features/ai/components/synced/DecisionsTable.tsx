@@ -1,10 +1,12 @@
 import { Card, CardHeader } from "../../../../components/ui/index.ts";
 import { EmptyState } from "../../../../components/ui/index.ts";
-import { formatNumber, formatUsd } from "../../../../lib/format.ts";
+import { formatNumber } from "../../../../lib/format.ts";
+import { useCostFormat } from "../../api/cost-precision.ts";
 import type { AiData } from "../../api/use-ai.ts";
 
 /** Decision templates, read-only: they're edited in roost.config and synced with `roost push`. */
 export function DecisionsTable({ data }: { data: AiData }) {
+  const cost = useCostFormat();
   const usage = new Map(data.usage.byTemplate.map((u) => [u.template, u]));
   return (
     <Card>
@@ -37,7 +39,7 @@ export function DecisionsTable({ data }: { data: AiData }) {
                   <td className="font-mono text-xs">{d.model}</td>
                   <td className="font-mono text-xs text-muted">{Object.keys(d.questions).join(", ")}</td>
                   <td className="text-right font-mono text-xs">{formatNumber(u?.requests ?? 0)}</td>
-                  <td className="text-right font-mono text-xs">{formatUsd(u?.costUsd ?? 0)}</td>
+                  <td className="text-right font-mono text-xs">{cost(u?.costUsd ?? 0)}</td>
                   <td className={`text-right font-mono text-xs ${u?.errors ? "text-danger" : ""}`}>{formatNumber(u?.errors ?? 0)}</td>
                 </tr>
               );

@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Card } from "../../components/ui/index.ts";
+import { Card, Segmented } from "../../components/ui/index.ts";
 import { EmptyState } from "../../components/ui/index.ts";
 import { useCurrentOrg, useEnvironment } from "../studio/index.ts";
+import { setCostPrecision, useCostPrecision } from "./api/cost-precision.ts";
 import { useAi, type AiTemplate } from "./api/use-ai.ts";
 import { DecisionsTable } from "./components/synced/DecisionsTable.tsx";
 import { SpeechTable } from "./components/synced/SpeechTable.tsx";
@@ -28,11 +29,25 @@ function GameAi({ gameId }: { gameId: string }) {
   const ai = useAi(gameId);
   // undefined = closed, null = new template, otherwise the template being edited.
   const [editing, setEditing] = useState<AiTemplate | null | undefined>(undefined);
+  const precision = useCostPrecision();
 
   if (ai.isPending) return <p className="px-8 py-6 text-muted">Loading…</p>;
   if (ai.isError) return <p className="px-8 py-6 text-danger">{ai.error.message}</p>;
   return (
     <div className="flex flex-col gap-5 px-8 py-6">
+      {/* Most calls cost a fraction of a cent: Exact shows what rounding to the cent hides. */}
+      <div className="flex items-center justify-end gap-2 text-xs text-muted">
+        <span>Costs</span>
+        <Segmented
+          label="How costs are shown"
+          options={[
+            { value: "rounded", label: "Rounded" },
+            { value: "exact", label: "Exact" },
+          ]}
+          value={precision}
+          onChange={setCostPrecision}
+        />
+      </div>
       <UsageCards data={ai.data} />
       <TemplatesTable data={ai.data} canEdit={role !== "viewer"} onEdit={setEditing} />
       <DecisionsTable data={ai.data} />
