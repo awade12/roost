@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { createClickhouse, type Clickhouse } from "@roost/clickhouse";
 import { createDb, orgs, users } from "@roost/db";
 import { eq, like } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../app.ts";
 import { loadEnv } from "../env.ts";
 import { memoryMailer, setupStudio, signIn, testAuthDeps, testExtras } from "./helpers.ts";
@@ -16,10 +16,12 @@ const ready = Boolean(process.env.DATABASE_URL && process.env.CLICKHOUSE_URL);
 
 const AUDIO = new Uint8Array([0x49, 0x44, 0x33, 4, 0, 0, 7, 7, 7]);
 
-/** Stands in for OpenRouter's /audio/speech: answers with bytes; `status` can be changed between tests. */
+/** Stands in for OpenRouter's /audio/speech (answers with bytes; `status` can be changed between tests) and its
+ *  generation endpoint, which reports what the call cost. */
 function fakeSpeech() {
   const state = { status: 200, calls: [] as { url: string; headers: Headers; body: Record<string, unknown> }[] };
   const fetch = async (url: string | URL | Request, init?: RequestInit) => {
+    if (String(url).includes("/generation?id=gen-tts-1")) return Response.json({ data: { id: "gen-tts-1", total_cost: 0.00125 } });
     state.calls.push({ url: String(url), headers: new Headers(init?.headers), body: JSON.parse(String(init?.body)) as Record<string, unknown> });
     if (state.status !== 200) return new Response(JSON.stringify({ error: { code: state.status, message: "Bad voice" } }), { status: state.status, headers: { "content-type": "application/json" } });
     return new Response(AUDIO, { headers: { "content-type": "audio/mpeg", "x-generation-id": "gen-tts-1" } });
@@ -27,7 +29,13 @@ function fakeSpeech() {
   return { state, fetch: fetch as typeof globalThis.fetch };
 }
 
+/** Speech calls still being logged (their cost is looked up after the response). */
+const pending: Promise<void>[] = [];
+
 describe.skipIf(!ready)("AI speech (integration)", () => {
+  // Every call's log finishes before the next test (and before the database closes).
+  afterEach(() => Promise.all(pending.splice(0)));
+
   const env = ready ? loadEnv() : undefined;
   const { db, pool } = createDb(env?.DATABASE_URL ?? "postgres://unused");
   const run = randomUUID().slice(0, 8);
@@ -45,7 +53,7 @@ describe.skipIf(!ready)("AI speech (integration)", () => {
   beforeAll(async () => {
     if (!env) return;
     ch = createClickhouse(env);
-    app = createApp({ db, ch, auth: testAuthDeps(mailer), ai: { apiKey: "test-key", fetch: upstream.fetch }, ...testExtras() });
+    app = createApp({ db, ch, auth: testAuthDeps(mailer), ai: { apiKey: "test-key", fetch: upstream.fetch, later: (work: Promise<void>) => pending.push(work), costWaits: [0] }, ...testExtras() });
     cookie = await signIn(app, mailer, `speak-${run}@test.roost`);
     studio = await setupStudio(app, cookie, `Speak ${run}`);
     const keyRes = await app.request(`/admin/environments/${studio.envId}/keys`, { method: "POST", headers: { cookie, "content-type": "application/json" }, body: JSON.stringify({ kind: "server" }) });
@@ -77,8 +85,10 @@ describe.skipIf(!ready)("AI speech (integration)", () => {
     expect(sent?.url).toBe("https://openrouter.ai/api/v1/audio/speech");
     expect(sent?.headers.get("authorization")).toBe("Bearer test-key");
     expect(sent?.body).toEqual({ model: "openai/gpt-4o-mini-tts", input: line.text, voice: "alloy", response_format: "mp3", instructions: "Warm and unhurried." });
+    // The call is logged once its real cost comes back from OpenRouter, after the audio was sent.
+    await Promise.all(pending.splice(0));
     const logged = await ch.query({ query: "SELECT template, template_version, model, status, tokens_in, tokens_out, cost_usd FROM ai_calls WHERE game_id = {g:UUID}", query_params: { g: studio.gameId }, format: "JSONEachRow" });
-    expect(await logged.json()).toEqual([expect.objectContaining({ template: "narrator", template_version: 1, model: "openai/gpt-4o-mini-tts", status: "ok", tokens_in: line.text.length, tokens_out: 0, cost_usd: 0 })]);
+    expect(await logged.json()).toEqual([expect.objectContaining({ template: "narrator", template_version: 1, model: "openai/gpt-4o-mini-tts", status: "ok", tokens_in: line.text.length, tokens_out: 0, cost_usd: 0.00125 })]);
   });
 
   it("lets a call replace the template's instructions", async () => {

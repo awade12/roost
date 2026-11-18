@@ -8,7 +8,16 @@ import { chat, UpstreamError, type ChatMessage } from "./upstream/openrouter.ts"
 import { chatStream } from "./upstream/stream.ts";
 import { logCall, type CallLog } from "./usage.ts";
 
-export type RunDeps = { db: Db; ch: Clickhouse; apiKey: string | undefined; fetch?: typeof fetch };
+export type RunDeps = {
+  db: Db;
+  ch: Clickhouse;
+  apiKey: string | undefined;
+  fetch?: typeof fetch;
+  /** Work that finishes after the response (looking up a speech call's cost). Tests pass one to await it. */
+  later?: (work: Promise<void>) => void;
+  /** How long to wait between cost lookups (speech/cost.ts); tests pass zeros. */
+  costWaits?: readonly number[];
+};
 
 type Failure = {
   ok: false;
