@@ -40,6 +40,22 @@ export const DecisionBodySchema = z.object({
   questions: z.record(QuestionKeySchema, DecisionQuestionSchema).refine(countBetween(1, 20), "1 to 20 questions"),
 });
 
+/**
+ * A server-side text-to-speech template (OpenRouter's `/audio/speech`). Games say a line with
+ * one of the listed voices; the model, format and limits stay on the server.
+ */
+export const SpeechBodySchema = z.object({
+  model: ModelIdSchema,
+  /** The voice IDs games may ask for (model-specific, e.g. "alloy" or "en_paul_neutral"). */
+  voices: z.array(z.string().min(1).max(100)).min(1).max(200),
+  /** `mp3` (audio/mpeg) or raw `pcm`. Some models only do one; see OpenRouter's TTS docs. */
+  format: z.enum(["mp3", "pcm"]).default("mp3"),
+  /** The longest text a game may send, in characters. */
+  maxChars: z.number().int().min(1).max(3000).default(500),
+  /** Default delivery guidance (tone, pacing). Only some models use it. */
+  instructions: z.string().min(1).max(500).optional(),
+});
+
 /** Everything about a flag except its key and type, which never change once games read it. */
 export const FlagFieldsSchema = z.object({
   description: z.string().trim().max(500).default(""),
@@ -66,6 +82,8 @@ export const RoostConfigSchema = z.object({
   templates: z.record(TemplateNameSchema, TemplateBodySchema).default({}),
   /** Decision templates (added with AI decisions). Like templates, they belong to the game. */
   decisions: z.record(TemplateNameSchema, DecisionBodySchema).default({}),
+  /** Text-to-speech templates (added with AI speech). Like templates, they belong to the game. */
+  speech: z.record(TemplateNameSchema, SpeechBodySchema).default({}),
   flags: z.record(FlagKeySchema, FlagBodySchema).default({}),
   aiLimits: AiLimitsSchema.optional(),
 });
@@ -73,6 +91,7 @@ export const RoostConfigSchema = z.object({
 export type TemplateBody = z.infer<typeof TemplateBodySchema>;
 export type DecisionQuestion = z.infer<typeof DecisionQuestionSchema>;
 export type DecisionBody = z.infer<typeof DecisionBodySchema>;
+export type SpeechBody = z.infer<typeof SpeechBodySchema>;
 export type FlagBody = z.infer<typeof FlagBodySchema>;
 export type FlagFields = z.infer<typeof FlagFieldsSchema>;
 export type AiLimitsBody = z.infer<typeof AiLimitsSchema>;

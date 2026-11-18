@@ -92,6 +92,13 @@
       "when": 1794951697236,
       "tag": "0012_ai_decisions",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794977457173,
+      "tag": "0013_ai_speech",
+      "breakpoints": true
     }
   ]
 }

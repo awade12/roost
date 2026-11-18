@@ -18,7 +18,7 @@ import { queryRoutes } from "./query/index.ts";
  */
 export function v1Routes(deps: AppDeps) {
   return new Hono()
-    .use(cors({ origin: "*", allowHeaders: ["content-type", "x-roost-key", "x-filename", "if-none-match"], exposeHeaders: ["etag"] }))
+    .use(cors({ origin: "*", allowHeaders: ["content-type", "x-roost-key", "x-filename", "if-none-match"], exposeHeaders: ["etag", "x-roost-model", "x-roost-chars"] }))
     .route("/", eventRoutes(deps))
     .route("/", aiRoutes(deps))
     .route("/", crashRoutes(deps))

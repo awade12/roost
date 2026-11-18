@@ -62,3 +62,31 @@ export const aiDecisions = pgTable(
   },
   (t) => [unique().on(t.gameId, t.name)],
 );
+
+/**
+ * Server-side text-to-speech templates (OpenRouter's `/audio/speech`). Games say a line by name
+ * with one of the allowed voices; the model, format and length limit live here.
+ */
+export const aiSpeech = pgTable(
+  "ai_speech",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    gameId: uuid("game_id")
+      .notNull()
+      .references(() => games.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    /** Bumped on every real edit; logged with each call like template versions. */
+    version: integer("version").notNull().default(1),
+    model: text("model").notNull(),
+    /** Allowed voice IDs, validated by SpeechBodySchema on the way in. */
+    voices: jsonb("voices").notNull(),
+    /** "mp3" or "pcm". */
+    format: text("format").notNull().default("mp3"),
+    maxChars: integer("max_chars").notNull().default(500),
+    /** Default delivery instructions; null when the template has none. */
+    instructions: text("instructions"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique().on(t.gameId, t.name)],
+);

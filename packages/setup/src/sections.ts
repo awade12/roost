@@ -99,7 +99,12 @@ Define templates in \`roost.config.json\`.${
 
 To classify or score something (e.g. what kind of message a player wrote), use a decision model
 such as \`liquid/d1.2\`: define it under \`decisions\` in \`roost.config.json\` and call
-\`roost.decide("message_kind", { message })\`. Decisions throw on failure like \`ai\`.`
+\`roost.decide("message_kind", { message })\`. Decisions throw on failure like \`ai\`.
+
+To say a line out loud, define a speech template under \`speech\` in \`roost.config.json\` (a TTS
+model such as \`openai/gpt-4o-mini-tts\` and the voices it may use) and call
+\`roost.speak("narrator", text, { voice: "alloy" })\`. It resolves with \`{ audio, contentType }\`
+and throws on failure like \`ai\`.`
   }`;
 }
 

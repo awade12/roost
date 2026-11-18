@@ -241,6 +241,15 @@ attach a common context (game, build, platform, device, session, player).
   keys allowed) with free text or named fields as `state`; the answers come back typed. Same
   limits and `ai_calls` logging as templates (logged under the decision's name). Image
   (`box`) questions aren't supported.
+- **Speech templates:** text-to-speech through OpenRouter's `POST /api/v1/audio/speech`
+  (OpenAI-compatible; answers with raw audio). A speech template is a model, the voices games may
+  use, a format (`mp3` or `pcm`), a `maxChars` limit (at most 3,000) and optional default
+  instructions, stored per game in `ai_speech`, versioned and synced as `speech` in
+  `roost.config`. Games call `POST /v1/ai/speak {template, text, voice, instructions?, playerId}`
+  (client keys allowed) and get the audio bytes back, with `x-roost-model` and `x-roost-chars`
+  headers. Same limits and `ai_calls` logging as templates; the text's length is logged as input
+  tokens, so it counts toward a player's daily budget. OpenRouter reports no cost for speech, so
+  the cost is logged as 0 and the monthly cap doesn't see it.
 
 ### 3. Bug Reports + Crashes (v1)
 - **Player reports:** `POST /v1/reports` — text, category, screenshot, logs,

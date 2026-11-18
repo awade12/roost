@@ -216,6 +216,24 @@ try {
 }
 ```
 
+### Speech
+
+A speech template says a line with a text-to-speech model (such as `openai/gpt-4o-mini-tts`) in
+one of the voices it lists. Define it under `speech` in `roost.config.json` and `roost push`; the
+text's length counts toward the player's daily AI budget. It resolves with the audio bytes (mp3
+or raw pcm, as the template says) and throws `RoostAiError` like `ai`, so keep a fallback.
+
+```ts
+// roost.config.json → "speech": { "narrator": { "model": "openai/gpt-4o-mini-tts",
+//   "voices": ["alloy", "nova"], "format": "mp3", "maxChars": 500 } }
+try {
+  const { audio, contentType } = await roost.speak("narrator", "Happy birthday, Sam!", { voice: "alloy", instructions: "Warm." });
+  await play(audio, contentType);
+} catch {
+  showSubtitle("Happy birthday, Sam!"); // rate limited or offline
+}
+```
+
 ## Offline behaviour
 
 - Events are queued in `storage` and sent in batches; a failed send keeps them for the next

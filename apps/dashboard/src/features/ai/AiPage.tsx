@@ -3,7 +3,8 @@ import { Card } from "../../components/ui/index.ts";
 import { EmptyState } from "../../components/ui/index.ts";
 import { useCurrentOrg, useEnvironment } from "../studio/index.ts";
 import { useAi, type AiTemplate } from "./api/use-ai.ts";
-import { DecisionsTable } from "./components/DecisionsTable.tsx";
+import { DecisionsTable } from "./components/synced/DecisionsTable.tsx";
+import { SpeechTable } from "./components/synced/SpeechTable.tsx";
 import { LimitsForm } from "./components/LimitsForm.tsx";
 import { TemplateEditor } from "./components/TemplateEditor.tsx";
 import { TemplatesTable } from "./components/TemplatesTable.tsx";
@@ -35,6 +36,7 @@ function GameAi({ gameId }: { gameId: string }) {
       <UsageCards data={ai.data} />
       <TemplatesTable data={ai.data} canEdit={role !== "viewer"} onEdit={setEditing} />
       <DecisionsTable data={ai.data} />
+      <SpeechTable data={ai.data} />
       <LimitsForm key={JSON.stringify(ai.data.limits)} gameId={gameId} limits={ai.data.limits} isOwner={role === "owner"} />
       {editing !== undefined && <TemplateEditor gameId={gameId} template={editing} onClose={() => setEditing(undefined)} />}
     </div>
