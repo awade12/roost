@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · [SemVer](htt
 
 ## [Unreleased]
 
+### Added
+- **sdk-js** `roost.speak(template, text, { voice, instructions })` says a line with a speech template (text-to-speech kept on the server) and resolves with `{ audio, contentType, model }`, the audio as an `ArrayBuffer` to play. Throws `RoostAiError` on failure like `ai` and `decide`.
+
 ## [0.4.0] - 2026-11-17
 
 ### Fixed

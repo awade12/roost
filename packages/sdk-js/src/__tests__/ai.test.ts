@@ -54,4 +54,22 @@ describe("AI proxy calls", () => {
     expect(error).toBeInstanceOf(RoostAiError);
     expect((error as RoostAiError).code).toBe("not_found");
   });
+
+  it("speaks: posts the line and voice, returns the audio and its type", async () => {
+    const bytes = new Uint8Array([1, 2, 3, 4]);
+    const { roost, fetch } = client(() => new Response(bytes, { headers: { "content-type": "audio/mpeg", "x-roost-model": "openai/gpt-4o-mini-tts", "x-roost-chars": "6" } }));
+    const result = await roost.speak("narrator", "Hello!", { voice: "alloy", instructions: "Cheerful." });
+    expect(String(fetch.mock.calls[0]?.[0])).toBe("https://roost.test/v1/ai/speak");
+    expect(sent(fetch)).toEqual({ template: "narrator", text: "Hello!", voice: "alloy", instructions: "Cheerful.", playerId: "p1" });
+    expect(new Uint8Array(result.audio)).toEqual(bytes);
+    expect(result).toMatchObject({ contentType: "audio/mpeg", model: "openai/gpt-4o-mini-tts" });
+  });
+
+  it("leaves instructions out when not given, and turns a failure into RoostAiError", async () => {
+    const { roost, fetch } = client(() => new Response(JSON.stringify({ error: { code: "bad_request", message: "voice not allowed" } }), { status: 400 }));
+    const error = await roost.speak("narrator", "Hi", { voice: "onyx" }).catch((e: unknown) => e);
+    expect(sent(fetch)).toEqual({ template: "narrator", text: "Hi", voice: "onyx", playerId: "p1" });
+    expect(error).toBeInstanceOf(RoostAiError);
+    expect((error as RoostAiError).code).toBe("bad_request");
+  });
 });

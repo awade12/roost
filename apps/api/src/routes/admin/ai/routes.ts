@@ -25,13 +25,14 @@ export function aiAdminRoutes({ db, ch }: AppDeps) {
     .get("/games/:gameId/ai", zValidator("param", GameParam, invalid), async (c) => {
       const { gameId } = c.req.valid("param");
       await forGame(c.get("userId"), gameId, "viewer");
-      const [templates, decisions, limits, usage] = await Promise.all([
+      const [templates, decisions, speech, limits, usage] = await Promise.all([
         ai.listTemplates(db, gameId),
         ai.listDecisions(db, gameId),
+        ai.listSpeech(db, gameId),
         ai.getLimits(db, gameId),
         ai.usageSummary(ch, gameId),
       ]);
-      return c.json({ templates, decisions, limits, usage });
+      return c.json({ templates, decisions, speech, limits, usage });
     })
     .post("/games/:gameId/ai/templates", zValidator("param", GameParam, invalid), zValidator("json", Template, invalid), async (c) => {
       const { gameId } = c.req.valid("param");

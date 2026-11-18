@@ -1,4 +1,4 @@
-export { RoostAiError, type AiOptions, type AiVars, type DecisionState } from "./ai/index.ts";
+export { RoostAiError, type AiOptions, type AiVars, type DecisionState, type SpeakOptions, type SpeakResult } from "./ai/index.ts";
 export type { AiDecideResponse, DecisionAnswer } from "./wire/index.ts";
 export { Roost } from "./client.ts";
 export { uuid } from "./ids/index.ts";

@@ -1,6 +1,6 @@
 import type { AiDecideResponse, AiRunResponse } from "./wire/index.ts";
 import { MAX_EVENTS_PER_BATCH } from "@roost/contracts/limits";
-import { runAi, runDecision, streamAi, type AiOptions, type AiVars, type DecisionState } from "./ai/index.ts";
+import { runAi, runDecision, runSpeech, streamAi, type AiOptions, type AiVars, type DecisionState, type SpeakOptions, type SpeakResult } from "./ai/index.ts";
 import { CrashReporter, installHandlers, Scope, type BreadcrumbInput, type CaptureOptions } from "./crash/index.ts";
 import { createProvider, FlagStore } from "./flags/index.ts";
 import { EventQueue } from "./queue.ts";
@@ -155,6 +155,14 @@ export class Roost {
    */
   decide(decision: string, state: DecisionState): Promise<AiDecideResponse> {
     return runDecision(this.opts, decision, state);
+  }
+
+  /**
+   * Says a line with a speech template (text-to-speech kept on the server) in one of its voices.
+   * Resolves with the audio bytes to play. Throws `RoostAiError` on failure like `ai`.
+   */
+  speak(template: string, text: string, options: SpeakOptions): Promise<SpeakResult> {
+    return runSpeech(this.opts, template, text, options);
   }
 
   async stop(): Promise<void> {

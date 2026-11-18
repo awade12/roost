@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import { AiCompleteSchema, AiDecideSchema, AiRunSchema, type AiDecideResponse, type AiRunResponse } from "@roost/contracts";
+import { AiCompleteSchema, AiDecideSchema, AiRunSchema, AiSpeakSchema, SPEAK_HEADERS, type AiDecideResponse, type AiRunResponse } from "@roost/contracts";
 import { ai } from "@roost/core";
 import { Hono, type Context } from "hono";
 import { streamSSE } from "hono/streaming";
@@ -55,5 +55,11 @@ export function aiRoutes({ db, rateLimits, ch, ai: aiDeps }: AppDeps) {
       if (!result.ok) throw new AppError(result.code, result.message);
       const body: AiDecideResponse = { answers: result.answers, model: result.model, usage: { tokensIn: result.tokensIn, tokensOut: result.tokensOut } };
       return c.json(body);
+    })
+    // Speech templates (OpenRouter's text-to-speech). Client keys allowed. Answers with the audio bytes.
+    .post("/ai/speak", limitBody(ONE_MB), requireKey({ db, rateLimits }), zValidator("json", AiSpeakSchema, invalid), async (c) => {
+      const result = await ai.runSpeech(deps, c.get("environmentId"), c.req.valid("json"));
+      if (!result.ok) throw new AppError(result.code, result.message);
+      return c.body(result.audio, 200, { "content-type": result.contentType, [SPEAK_HEADERS.model]: result.model, [SPEAK_HEADERS.chars]: String(result.chars) });
     });
 }

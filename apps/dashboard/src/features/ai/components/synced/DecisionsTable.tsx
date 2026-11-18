@@ -1,7 +1,7 @@
-import { Card, CardHeader } from "../../../components/ui/index.ts";
-import { EmptyState } from "../../../components/ui/index.ts";
-import { formatNumber, formatUsd } from "../../../lib/format.ts";
-import type { AiData } from "../api/use-ai.ts";
+import { Card, CardHeader } from "../../../../components/ui/index.ts";
+import { EmptyState } from "../../../../components/ui/index.ts";
+import { formatNumber, formatUsd } from "../../../../lib/format.ts";
+import type { AiData } from "../../api/use-ai.ts";
 
 /** Decision templates, read-only: they're edited in roost.config and synced with `roost push`. */
 export function DecisionsTable({ data }: { data: AiData }) {

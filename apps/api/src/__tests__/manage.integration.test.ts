@@ -27,6 +27,7 @@ const FILE = {
       },
     },
   },
+  speech: { narrator: { model: "openai/gpt-4o-mini-tts", voices: ["alloy", "nova"], instructions: "Warm." } },
   flags: {
     new_shop: { type: "boolean", value: false, rollout: { percent: 25, value: true } },
     "enemy.tuning": { type: "json", value: { hp: 100 } },
@@ -81,9 +82,9 @@ describe.skipIf(!ready)("management and query API with server keys (integration)
 
   it("applies a config file, then reports nothing to change", async () => {
     const first = await json<Changes>(call("PUT", "/manage/config", FILE));
-    expect(results(first)).toEqual({ "template:npc_greeting": "created", "decision:message_kind": "created", "flag:new_shop": "created", "flag:enemy.tuning": "created", "aiLimits:aiLimits": "updated" });
+    expect(results(first)).toEqual({ "template:npc_greeting": "created", "decision:message_kind": "created", "speech:narrator": "created", "flag:new_shop": "created", "flag:enemy.tuning": "created", "aiLimits:aiLimits": "updated" });
     const again = await json<Changes>(call("PUT", "/manage/config", FILE));
-    expect(results(again)).toEqual({ "template:npc_greeting": "unchanged", "decision:message_kind": "unchanged", "flag:new_shop": "unchanged", "flag:enemy.tuning": "unchanged", "aiLimits:aiLimits": "unchanged" });
+    expect(results(again)).toEqual({ "template:npc_greeting": "unchanged", "decision:message_kind": "unchanged", "speech:narrator": "unchanged", "flag:new_shop": "unchanged", "flag:enemy.tuning": "unchanged", "aiLimits:aiLimits": "unchanged" });
     // Games see the pushed flag straight away.
     const cfg = await json<{ flags: Record<string, { value: unknown }> }>(call("GET", "/config?playerId=p1", undefined, studio.key));
     expect(cfg.flags["enemy.tuning"]?.value).toEqual({ hp: 100 });
@@ -113,6 +114,19 @@ describe.skipIf(!ready)("management and query API with server keys (integration)
     await call("PUT", "/manage/config?prune=true", { ...FILE, decisions: {} });
     expect((await json<Pulled>(call("GET", "/manage/config"))).decisions).toEqual({});
     const bad = await call("PUT", "/manage/config", { decisions: { x: { model: "liquid/d1.2", questions: { q: { type: "box", instructions: "?" } } } } });
+    expect(bad.status).toBe(400);
+  });
+
+  it("updates, prunes and pulls speech templates, with defaults filled in", async () => {
+    type Pulled = { speech: Record<string, { voices: string[]; format: string; maxChars: number; instructions?: string }> };
+    expect((await json<Pulled>(call("GET", "/manage/config"))).speech).toEqual({ narrator: { model: "openai/gpt-4o-mini-tts", voices: ["alloy", "nova"], format: "mp3", maxChars: 500, instructions: "Warm." } });
+    const edited = { speech: { narrator: { model: "openai/gpt-4o-mini-tts", voices: ["alloy"], format: "pcm", maxChars: 1000 } } };
+    expect(results(await json<Changes>(call("PUT", "/manage/config", edited)))).toMatchObject({ "speech:narrator": "updated" });
+    expect((await json<Pulled>(call("GET", "/manage/config"))).speech.narrator).toEqual({ model: "openai/gpt-4o-mini-tts", voices: ["alloy"], format: "pcm", maxChars: 1000 });
+    expect(results(await json<Changes>(call("PUT", "/manage/config", edited)))).toMatchObject({ "speech:narrator": "unchanged" });
+    await call("PUT", "/manage/config?prune=true", { ...FILE, speech: {} });
+    expect((await json<Pulled>(call("GET", "/manage/config"))).speech).toEqual({});
+    const bad = await call("PUT", "/manage/config", { speech: { x: { model: "openai/gpt-4o-mini-tts", voices: ["alloy"], maxChars: 5000 } } });
     expect(bad.status).toBe(400);
   });
 

@@ -85,6 +85,9 @@ export type DecisionAnswer =
 
 export type AiDecideResponse = { answers: Record<string, DecisionAnswer>; model: string; usage: { tokensIn: number; tokensOut: number } };
 
+/** POST /v1/ai/speak body. The answer is audio bytes, with x-roost-model and x-roost-chars headers. */
+export type AiSpeak = { template: string; text: string; voice: string; instructions?: string | undefined; playerId: string };
+
 export type ErrorBody = { error: { code: string; message: string } };
 
 export type FlagType = "boolean" | "string" | "number" | "json";

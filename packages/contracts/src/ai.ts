@@ -82,6 +82,30 @@ export const AiDecideResponseSchema = z.object({
   usage: z.object({ tokensIn: z.number(), tokensOut: z.number() }),
 });
 
+/**
+ * POST /v1/ai/speak — say a line with a server-side speech template (OpenRouter's text-to-speech).
+ * The answer is the audio itself, not JSON: see `SPEAK_HEADERS`.
+ */
+export const AiSpeakSchema = z.object({
+  template: z.string().min(1).max(64).regex(/^[a-z][a-z0-9_]*$/, "snake_case"),
+  /** What to say. The template's `maxChars` (at most 3,000) is checked on the server. */
+  text: z.string().min(1).max(3000),
+  /** One of the template's `voices`. */
+  voice: z.string().min(1).max(100),
+  /** Delivery guidance for this line (tone, pacing); replaces the template's default. */
+  instructions: z.string().min(1).max(300).optional(),
+  /** Budgets and rate limits apply per player; the text's length counts as its tokens. */
+  playerId: z.string().min(1).max(64),
+});
+
+/** Response headers of POST /v1/ai/speak, next to `content-type` (e.g. `audio/mpeg`). */
+export const SPEAK_HEADERS = {
+  /** The model that spoke. */
+  model: "x-roost-model",
+  /** Characters spoken, as counted against the player's daily budget. */
+  chars: "x-roost-chars",
+} as const;
+
 export const AiRunResponseSchema = z.object({
   text: z.string(),
   /** The model that answered (may be a fallback). */
@@ -95,3 +119,4 @@ export type AiRunResponse = z.infer<typeof AiRunResponseSchema>;
 export type AiDecide = z.infer<typeof AiDecideSchema>;
 export type DecisionAnswer = z.infer<typeof DecisionAnswerSchema>;
 export type AiDecideResponse = z.infer<typeof AiDecideResponseSchema>;
+export type AiSpeak = z.infer<typeof AiSpeakSchema>;
