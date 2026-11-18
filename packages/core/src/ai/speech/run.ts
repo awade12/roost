@@ -3,6 +3,7 @@ import { checkLimits } from "../limits.ts";
 import type { RunDeps } from "../run.ts";
 import { UpstreamError } from "../upstream/openrouter.ts";
 import { logCall, type CallLog } from "../usage.ts";
+import { speechCost } from "./cost.ts";
 import { loadSpeech } from "./store.ts";
 import { speak } from "./upstream.ts";
 
@@ -13,8 +14,10 @@ export type SpeechResult =
 /**
  * Says a line with a game's speech template for one player: same limits and logging as prompt
  * templates (logged under the template's name). The text's length counts as its input tokens, so
- * a player's daily budget covers speech too. OpenRouter reports no cost for speech, so cost is
- * logged as 0 and the monthly cap doesn't see speech spend.
+ * a player's daily budget covers speech too. OpenRouter sends no price with the audio, so the
+ * audio goes back at once and the call is logged a moment later with its real cost from
+ * OpenRouter's generation endpoint (cost.ts), which counts toward the monthly cap. If that can't
+ * be found, it's logged at 0.
  */
 export async function runSpeech(deps: RunDeps, environmentId: string, req: AiSpeak): Promise<SpeechResult> {
   if (!deps.apiKey) return { ok: false, code: "unavailable", message: "The AI proxy isn't configured on this server." };
@@ -34,7 +37,14 @@ export async function runSpeech(deps: RunDeps, environmentId: string, req: AiSpe
   const started = Date.now();
   try {
     const result = await speak({ apiKey: deps.apiKey, model: speech.model, input: req.text, voice: req.voice, format: speech.format, ...(instructions ? { instructions } : {}), ...(deps.fetch ? { fetch: deps.fetch } : {}) });
-    await logCall(deps.ch, { ...log, tokensIn: chars, status: "ok", latencyMs: Date.now() - started });
+    const latencyMs = Date.now() - started;
+    const apiKey = deps.apiKey;
+    const logged = (async () => {
+      const cost = result.generationId ? await speechCost({ apiKey, generationId: result.generationId, ...(deps.fetch ? { fetch: deps.fetch } : {}), ...(deps.costWaits ? { waits: deps.costWaits } : {}) }) : undefined;
+      await logCall(deps.ch, { ...log, tokensIn: chars, costUsd: cost ?? 0, status: "ok", latencyMs });
+    })().catch((err: unknown) => console.error("[ai] logging a speech call failed", err));
+    if (deps.later) deps.later(logged);
+    else void logged;
     return { ok: true, audio: result.audio, contentType: result.contentType, model: speech.model, chars };
   } catch (err) {
     await logCall(deps.ch, { ...log, status: "error", latencyMs: Date.now() - started });

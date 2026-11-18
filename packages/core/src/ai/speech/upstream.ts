@@ -15,7 +15,7 @@ export type SpeakRequest = {
   fetch?: typeof fetch;
 };
 
-export type SpeakResult = { audio: ArrayBuffer; contentType: string };
+export type SpeakResult = { audio: ArrayBuffer; contentType: string; /** OpenRouter's name for this call, to look up its cost. */ generationId?: string };
 
 /** What a format is called on the wire when OpenRouter doesn't say (or says something odd). */
 const FALLBACK_TYPE = { mp3: "audio/mpeg", pcm: "audio/pcm" } as const;
@@ -28,7 +28,8 @@ export function speechContentType(format: SpeakRequest["format"], upstream: stri
 
 /**
  * One call to OpenRouter's text-to-speech endpoint (OpenAI-compatible). The answer is raw audio,
- * not JSON, and carries no usage or cost; errors come back as JSON with a non-200 status.
+ * not JSON, and carries no usage or cost (only `x-generation-id`, see cost.ts); errors come back as
+ * JSON with a non-200 status.
  */
 export async function speak(req: SpeakRequest): Promise<SpeakResult> {
   let res: Response;
@@ -50,5 +51,6 @@ export async function speak(req: SpeakRequest): Promise<SpeakResult> {
     throw new UpstreamError("OpenRouter dropped the audio stream");
   });
   if (audio.byteLength === 0) throw new UpstreamError("OpenRouter returned no audio");
-  return { audio, contentType: speechContentType(req.format, type) };
+  const generationId = res.headers.get("x-generation-id") ?? undefined;
+  return { audio, contentType: speechContentType(req.format, type), ...(generationId ? { generationId } : {}) };
 }

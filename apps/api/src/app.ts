@@ -20,7 +20,8 @@ export type AppDeps = {
   auth: AuthDeps;
   /** Attachment bytes (S3-compatible; in-memory in tests). */
   storage: storage.Storage;
-  ai: { apiKey: string | undefined; fetch?: typeof fetch };
+  /** The AI proxy's key and, in tests, its upstream and a way to wait for work that runs after a response. */
+  ai: { apiKey: string | undefined; fetch?: typeof fetch; later?: (work: Promise<void>) => void; costWaits?: readonly number[] };
   /** Linear API calls; `fetch` is injected in tests. `dashboardUrl` is linked from created Linear issues. */
   linear: { fetch?: typeof fetch; dashboardUrl: string | undefined };
   /** Test sends to alert channels; `fetch` is injected in tests. */
