@@ -1,6 +1,6 @@
 import { Card, CardHeader } from "../../../../components/ui/index.ts";
 import { EmptyState } from "../../../../components/ui/index.ts";
-import { formatNumber } from "../../../../lib/format.ts";
+import { formatNumber, formatUsd } from "../../../../lib/format.ts";
 import type { AiData } from "../../api/use-ai.ts";
 
 /** Speech (text-to-speech) templates, read-only: they're edited in roost.config and synced with `roost push`. */
@@ -25,6 +25,7 @@ export function SpeechTable({ data }: { data: AiData }) {
               <th className="text-right">Max chars</th>
               <th className="text-right">Requests</th>
               <th className="text-right">Characters</th>
+              <th className="text-right">Cost</th>
               <th className="text-right">Errors</th>
             </tr>
           </thead>
@@ -41,8 +42,9 @@ export function SpeechTable({ data }: { data: AiData }) {
                   <td className="font-mono text-xs">{s.format}</td>
                   <td className="text-right font-mono text-xs">{formatNumber(s.maxChars)}</td>
                   <td className="text-right font-mono text-xs">{formatNumber(u?.requests ?? 0)}</td>
-                  {/* Characters, not cost: OpenRouter doesn't report what a speech call cost. */}
                   <td className="text-right font-mono text-xs">{formatNumber(u?.tokensIn ?? 0)}</td>
+                  {/* Looked up from OpenRouter after each call (core/ai/speech/cost.ts); 0 before that existed. */}
+                  <td className="text-right font-mono text-xs">{formatUsd(u?.costUsd ?? 0)}</td>
                   <td className={`text-right font-mono text-xs ${u?.errors ? "text-danger" : ""}`}>{formatNumber(u?.errors ?? 0)}</td>
                 </tr>
               );
