@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · [SemVer](htt
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-17
+
 ### Fixed
 - **sdk-js** Works on Hermes (React Native) without a polyfill. The client used `crypto.randomUUID()`, which Hermes doesn't have, so `new Roost()` threw at start-up and no events were sent. It now falls back to `crypto.getRandomValues`, then `Math.random`.
 
