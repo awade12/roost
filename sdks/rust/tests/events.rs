@@ -50,8 +50,9 @@ fn drops_invalid_names_instead_of_poisoning_the_batch() {
 #[test]
 fn keeps_events_while_the_server_is_down() {
     let fake = Fake::new();
-    let roost = Roost::start(config(&fake)).unwrap();
+    // Down before start: `start` flushes `session_start` straight away, and that flush must not get through.
     fake.set_status(503);
+    let roost = Roost::start(config(&fake)).unwrap();
     roost.track("first");
     roost.flush();
     fake.posts.lock().unwrap().clear();

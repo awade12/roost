@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · [SemVer](htt
 
 ## [Unreleased]
 
+### Fixed
+- **sdk-rust** A flaky test (`keeps_events_while_the_server_is_down`) raced the flush `start` sends straight away, failing CI now and then and skipping deploys.
+
 ### Added
 - **sdk-rust** Installable from your Roost server's Cargo registry: `roost-sdk = { version = "0.2", registry = "roost" }` with `[registries.roost] index = "sparse+<roost>/sdk/cargo/"`.
 - **sdk-rust** `ai_with(template, vars, &AiOptions)` (history via `AiTurn`, model, max tokens, temperature) and `ai_stream(…, on_delta)` for streamed answers. `Transport` gained `post_stream` with a default.
