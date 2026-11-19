@@ -12,13 +12,22 @@ export function listIssues(db: Db, environmentId: string, status: IssueStatus) {
     .limit(200);
 }
 
+/** An issue by its short per-environment number (#142), as people refer to them. */
+export async function issueByNumber(db: Db, environmentId: string, number: number) {
+  const [row] = await db.select().from(issues).where(and(eq(issues.environmentId, environmentId), eq(issues.number, number))).limit(1);
+  return row ?? null;
+}
+
 export async function getIssue(db: Db, id: string) {
   const [row] = await db.select().from(issues).where(eq(issues.id, id)).limit(1);
   return row ?? null;
 }
 
-/** Resolving clears the regression flag; reopening clears the resolved time. Logged to activity. */
-export async function setIssueStatus(db: Db, id: string, status: IssueStatus, userId: string) {
+/**
+ * Resolving clears the regression flag; reopening clears the resolved time. Logged to activity.
+ * `userId` is null when a server key made the change; `via` says what did (e.g. "mcp").
+ */
+export async function setIssueStatus(db: Db, id: string, status: IssueStatus, userId: string | null, via?: string) {
   return db.transaction(async (tx) => {
     const [before] = await tx.select({ status: issues.status }).from(issues).where(eq(issues.id, id));
     const [row] = await tx
@@ -27,7 +36,7 @@ export async function setIssueStatus(db: Db, id: string, status: IssueStatus, us
       .where(eq(issues.id, id))
       .returning();
     if (row && before?.status !== status) {
-      await tx.insert(issueActivity).values({ issueId: id, userId, kind: "status", data: { from: before?.status, to: status } });
+      await tx.insert(issueActivity).values({ issueId: id, userId, kind: "status", data: { from: before?.status, to: status, ...(via ? { via } : {}) } });
     }
     return row ?? null;
   });

@@ -9,6 +9,7 @@ import { errorResponse, onError } from "./http/errors.ts";
 import { memoryRateStore, type RateStore } from "./http/rate-limit/index.ts";
 import { adminRoutes } from "./routes/admin/index.ts";
 import { healthRoutes } from "./routes/health.ts";
+import { mcpRoutes } from "./routes/mcp/index.ts";
 import { sdkRoutes } from "./routes/sdk.ts";
 import { v1Routes } from "./routes/v1/index.ts";
 
@@ -39,6 +40,7 @@ export function createApp(input: Omit<AppDeps, "rateLimits"> & { rateLimits?: Ra
     .route("/", healthRoutes)
     .route("/v1", v1Routes(deps))
     .route("/admin", adminRoutes(deps))
+    .route("/mcp", mcpRoutes(deps))
     .route("/sdk", sdkRoutes(deps.sdkDir ?? "dist/sdk", (raw) => isValidKey(deps.db, raw)))
     .notFound((c) => errorResponse(c, "not_found", "No such route"))
     .onError(onError);

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button, Dialog, Input } from "../../../../components/ui/index.ts";
+import { McpConnect } from "./McpConnect.tsx";
 
 type Props = { rawKey: string; kind: "client" | "server"; onClose: () => void };
 
@@ -37,6 +38,7 @@ export function NewKeyDialog({ rawKey, kind, onClose }: Props) {
         }
       />
       {kind === "server" && <p className="text-xs text-warn">Server keys can read all of this game's data. Keep them out of game builds.</p>}
+      {kind === "server" && <McpConnect rawKey={rawKey} />}
     </Dialog>
   );
 }
