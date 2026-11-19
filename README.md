@@ -93,6 +93,32 @@ per environment). The same server key works with the HTTP API directly:
   history, per-call options within the template's bounds, and `stream: true`.
 - `PUT /v1/debug-files/breakpad` and `/v1/debug-files/sourcemaps` (`pnpm upload:debug-files`)
 
+## Agents (MCP)
+
+Roost is an [MCP](https://modelcontextprotocol.io) server at `/mcp`, so Claude Code, Claude Desktop or any
+MCP client can read your game's issues, reports and analytics and make small changes. It uses a
+**server key**, and everything is scoped to that key's environment.
+
+```bash
+claude mcp add --transport http roost https://roost.example.com/mcp \
+  --header "Authorization: Bearer rk_server_…"
+```
+
+Other clients: Streamable HTTP at `https://roost.example.com/mcp`, header `Authorization: Bearer <server key>`
+(`X-Roost-Key` works too). Add one entry per environment you want an agent to see.
+
+| Tool | Does |
+| --- | --- |
+| `get_overview` | Daily players, new players, events, D1 retention, top events |
+| `list_issues`, `get_issue` | Crash/error groups; one issue's stack trace, breadcrumbs, platforms, builds |
+| `list_reports`, `get_report` | Player bug reports (the player's email is never returned) |
+| `query_events`, `get_retention`, `get_player` | Raw events with filters, retention cohorts, one player's history |
+| `list_flags`, `get_ai_usage` | Flags and config values; AI spend, cap and per-template cost |
+| `set_issue_status`, `set_report_status`, `set_flag_value` | Resolve/ignore/reopen, close/reopen, change a flag's default |
+
+Writes show up in the dashboard; issue changes are labelled "An agent (MCP)". The key's
+per-minute limit applies, and revoking the key cuts the agent off within 30 seconds.
+
 ## Contributing and security
 
 - How to set up, the repo rules and how to send a change: [CONTRIBUTING.md](CONTRIBUTING.md)

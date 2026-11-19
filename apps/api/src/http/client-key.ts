@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { settings } from "@roost/core";
 import { apiKeys, environments, type Db } from "@roost/db";
 import { and, eq, isNull } from "drizzle-orm";
-import type { MiddlewareHandler } from "hono";
+import type { Context, MiddlewareHandler } from "hono";
 import { AppError } from "./errors.ts";
 import { createLimiter, type RateStore } from "./rate-limit/index.ts";
 
@@ -46,11 +46,14 @@ async function resolve(db: Db, hash: string): Promise<Resolved> {
  * Resolves X-Roost-Key to an environment and its game's settings, then applies the
  * game's switches: the API can be paused, and each key gets the game's per-minute limit.
  */
-export function requireKey({ db, rateLimits }: { db: Db; rateLimits: RateStore }): MiddlewareHandler<{ Variables: KeyVars }> {
+export function requireKey(
+  { db, rateLimits }: { db: Db; rateLimits: RateStore },
+  { readKey = (c) => c.req.header(KEY_HEADER), missing = "Missing X-Roost-Key header" }: { readKey?: (c: Context) => string | undefined; missing?: string } = {},
+): MiddlewareHandler<{ Variables: KeyVars }> {
   const limiter = createLimiter(rateLimits, { name: "key", limit: settings.DEFAULT_SETTINGS.api.requestsPerMinute, windowMs: 60_000 });
   return async (c, next) => {
-    const raw = c.req.header(KEY_HEADER);
-    if (!raw) throw new AppError("unauthorized", "Missing X-Roost-Key header");
+    const raw = readKey(c);
+    if (!raw) throw new AppError("unauthorized", missing);
     const hash = createHash("sha256").update(raw).digest("hex");
     const key = await resolve(db, hash);
     if (!key) throw new AppError("unauthorized", "Invalid or revoked key");

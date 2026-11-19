@@ -1,4 +1,4 @@
-# One origin: dashboard at /, API at /v1, /admin, /health and /sdk (SDK downloads).
+# One origin: dashboard at /, API at /v1, /admin, /health, /sdk (SDK downloads) and /mcp (agents).
 # Behind another proxy, ROOST_TRUSTED_PROXIES lets its X-Forwarded-For (the player's IP) through.
 {
 	servers {
@@ -9,7 +9,7 @@
 {$ROOST_DOMAIN} {
 	encode zstd gzip
 
-	@api path /v1/* /admin/* /health /sdk /sdk/*
+	@api path /v1/* /admin/* /health /sdk /sdk/* /mcp /mcp/*
 	handle @api {
 		# Looks up every `api` container (re-checked every 10s), so `--scale api=N` spreads requests.
 		reverse_proxy {

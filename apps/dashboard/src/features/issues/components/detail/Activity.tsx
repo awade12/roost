@@ -63,7 +63,7 @@ export function Activity({ issueId }: { issueId: string }) {
           ) : (
             <li key={a.id} className="flex items-center gap-2 px-1 text-xs text-muted">
               <span className="size-1.5 rounded-full bg-faint" />
-              <span className="text-fg">{a.userEmail ?? "Roost"}</span> {describe(a)} · {formatAgo(a.createdAt)}
+              <span className="text-fg">{a.userEmail ?? ((a.data as { via?: string } | null)?.via === "mcp" ? "An agent (MCP)" : "Roost")}</span> {describe(a)} · {formatAgo(a.createdAt)}
             </li>
           ),
         )}
