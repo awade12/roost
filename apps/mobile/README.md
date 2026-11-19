@@ -26,10 +26,10 @@ The project is linked to Expo as `@weflyhq/roost`. `eas.json` has three profiles
 | --- | --- | --- |
 | `development` | Your own device, with the dev menu | `eas build --profile development --platform ios` |
 | `preview` | Testers, installed directly (ad hoc / APK) | `pnpm build:preview` |
-| `production` | TestFlight and the stores; build number bumps itself | `pnpm build:ios` then `pnpm submit:ios` |
+| `production` | TestFlight and the stores; build number bumps itself, then it's submitted automatically | `pnpm build:ios` (or `build:android`) |
 
 The first iOS build asks you to sign in to Apple and creates the certificate and provisioning profile; EAS keeps
-them. The first submit asks you to create the app in App Store Connect (bundle ID `app.playchrona.roost`).
+them. The first submit asks you to create the app in App Store Connect (bundle ID `app.playchrona.roost`); iOS builds land in TestFlight, never straight in review. `submit:ios` / `submit:android` resend the latest build by hand. Android auto-submit needs a Google Play service account key, and Google requires the very first upload to be done by hand in Play Console.
 EAS builds use Node 22 and pnpm 12 (pinned in `eas.json`), since its images ship older pnpm.
 
 The app needs a server with mobile sign-in (`client: "app"` on `/admin/auth/otp/verify`), so deploy the API
