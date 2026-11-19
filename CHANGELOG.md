@@ -112,6 +112,7 @@ Rules: see "Changelog" in `SPEC.md`.
 - **api** The `/v1` rate limit is now per key and set per game (default 120 a minute, as before) instead of fixed. Key lookups are cached for 30 seconds; revoking a key still takes effect at once on the same server.
 
 ### Fixed
+- **mobile** EAS release builds no longer fail with `Cannot read properties of undefined (reading 'transformFile')`: Babel presets are hoisted so Metro finds them on Node 22, and CI now bundles the app the same way on every PR.
 - **api** Errors thrown by Hono's own middleware (such as the CSRF check) now return their real 4xx status in the usual `{ "error": … }` shape instead of a 500.
 - **dashboard** The Expo setup guide (`ROOST.md`) made the player id with `crypto.randomUUID()`, which Hermes doesn't have; it now uses the SDK's `uuid()`. Guides also say to log Roost start-up errors in dev rather than swallow them, and give a `curl` check that tells a bad key or server apart from an app problem.
 - **dashboard** Segmented controls inside forms no longer submit the form when clicked.

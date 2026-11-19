@@ -3,3 +3,8 @@ packages:
   - packages/*
 allowBuilds:
   esbuild: true
+# The phone app's Babel presets and plugins (NativeWind's in particular) load each other
+# without declaring every dependency; hoisting them lets Metro find them on any Node version
+# (Node 22 on EAS failed to bundle without this).
+publicHoistPattern:
+  - "*babel*"
