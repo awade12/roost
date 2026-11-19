@@ -12,8 +12,8 @@
     "test": "vitest run",
     "doctor": "expo-doctor",
     "build:preview": "eas build --profile preview --platform all",
-    "build:ios": "eas build --profile production --platform ios",
-    "build:android": "eas build --profile production --platform android",
+    "build:ios": "eas build --profile production --platform ios --auto-submit",
+    "build:android": "eas build --profile production --platform android --auto-submit",
     "submit:ios": "eas submit --platform ios --latest",
     "submit:android": "eas submit --platform android --latest"
   },
