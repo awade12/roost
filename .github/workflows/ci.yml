@@ -64,6 +64,24 @@ jobs:
             exit 1
           fi
 
+  # Bundles the phone app the way an EAS release build does (same Node as apps/mobile/eas.json,
+  # fresh install, release export). Catches module-resolution problems before a 6-minute EAS build.
+  mobile-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.23.2"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Release bundle (iOS)
+        working-directory: apps/mobile
+        env:
+          EXPO_PUBLIC_ROOST_URL: https://roost.playchrona.app
+        run: pnpm exec expo export:embed --platform ios --dev false --entry-file index.ts --bundle-output "$RUNNER_TEMP/main.jsbundle" --assets-dest "$RUNNER_TEMP/assets"
+
   rust:
     runs-on: ubuntu-latest
     defaults:
