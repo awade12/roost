@@ -10,7 +10,8 @@ import { clearSessionCookie, sessionToken, setSessionCookie } from "./session.ts
 
 const FIFTEEN_MIN = 15 * 60 * 1000;
 const EmailBody = z.object({ email: z.email().max(254) });
-const VerifyBody = EmailBody.extend({ code: z.string().regex(/^\d{6}$/) });
+// `client: "app"`: the mobile app wants the session token in the body instead of a cookie.
+const VerifyBody = EmailBody.extend({ code: z.string().regex(/^\d{6}$/), client: z.literal("app").optional() });
 
 const invalidBody = (result: { success: boolean }) => {
   if (!result.success) throw new AppError("bad_request", "Check the email and code and try again");
@@ -38,10 +39,13 @@ export function authRoutes({ db, auth: authDeps, rateLimits }: AppDeps) {
     })
     .post("/otp/verify", zValidator("json", VerifyBody, invalidBody), async (c) => {
       await verifiesPerIp.hit(clientIp(c));
-      const { email, code } = c.req.valid("json");
+      const { email, code, client } = c.req.valid("json");
       const user = await auth.verifyOtp({ db, secret: authDeps.secret }, email, code);
       if (!user) throw new AppError("bad_request", "That code is wrong or has expired");
       const session = await auth.createSession(db, user.id);
+      if (client === "app") {
+        return c.json({ ok: true as const, token: session.token, expiresAt: session.expiresAt.toISOString() });
+      }
       setSessionCookie(c, session.token, session.expiresAt, authDeps.secureCookies);
       return c.json({ ok: true as const });
     })

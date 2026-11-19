@@ -1,5 +1,6 @@
 import type { ErrorBody, ErrorCode } from "@roost/contracts";
 import type { Context } from "hono";
+import { HTTPException } from "hono/http-exception";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { logger } from "./logger.ts";
 
@@ -31,8 +32,13 @@ export function errorResponse(c: Context, code: ErrorCode, message: string) {
   return c.json(body, STATUS[code]);
 }
 
+const BY_STATUS = new Map(Object.entries(STATUS).map(([code, status]) => [status as number, code as ErrorCode]));
+
 export function onError(err: Error, c: Context) {
   if (err instanceof AppError) return errorResponse(c, err.code, err.message);
+  // Hono's own middleware (csrf, body limit…) throws these; keep their status instead of a 500.
+  const known = err instanceof HTTPException && err.status < 500 ? BY_STATUS.get(err.status) : undefined;
+  if (known) return errorResponse(c, known, err.message || "Request refused");
   logger.error({ err, requestId: c.get("requestId") }, "unhandled error");
   return errorResponse(c, "internal", "Something went wrong");
 }

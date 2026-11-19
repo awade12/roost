@@ -56,6 +56,34 @@ describe.skipIf(!databaseUrl)("dashboard sign-in (integration)", () => {
     expect((await me(cookie)).status).toBe(401);
   });
 
+  it("gives the mobile app a bearer token instead of a cookie", async () => {
+    const email = newEmail();
+    await post("/otp/start", { email });
+    const verified = await post("/otp/verify", { email, code: mailer.lastCode(), client: "app" });
+    expect(verified.status).toBe(200);
+    expect(verified.headers.get("set-cookie")).toBeNull();
+    const { token, expiresAt } = (await verified.json()) as { token: string; expiresAt: string };
+    expect(new Date(expiresAt).getTime()).toBeGreaterThan(Date.now());
+
+    const bearer = { authorization: `Bearer ${token}` };
+    expect((await app.request("/admin/me", { headers: bearer })).status).toBe(200);
+    // Regression: like the app, no body and no Origin. csrf() used to refuse this, so the session stayed live.
+    const out = await app.request("/admin/auth/logout", { method: "POST", headers: bearer });
+    expect(out.status).toBe(200);
+    expect((await app.request("/admin/me", { headers: bearer })).status).toBe(401);
+    expect((await app.request("/admin/me", { headers: { authorization: "Bearer nope" } })).status).toBe(401);
+  });
+
+  it("still refuses a cross-site form post that carries the cookie", async () => {
+    const res = await app.request("/admin/auth/logout", {
+      method: "POST",
+      headers: { cookie: "roost_session=x", origin: "https://evil.example", "content-type": "application/x-www-form-urlencoded" },
+      body: "a=1",
+    });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toMatchObject({ error: { code: "forbidden" } });
+  });
+
   it("uses a code only once", async () => {
     const email = newEmail();
     await post("/otp/start", { email });
