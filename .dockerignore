@@ -4,3 +4,5 @@ node_modules
 sdks/rust/target
 .env
 .git
+# The phone app is built with EAS, not in the server images; leaving it out keeps React Native out of them.
+apps/mobile

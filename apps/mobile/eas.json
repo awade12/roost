@@ -1,0 +1,35 @@
+{
+  "cli": {
+    "version": ">= 18.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "base": {
+      "node": "22.23.2",
+      "pnpm": "12.10.1"
+    },
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal",
+      "environment": "development",
+      "env": { "EXPO_PUBLIC_ROOST_URL": "https://roost.playchrona.app" },
+      "ios": { "simulator": false }
+    },
+    "preview": {
+      "extends": "base",
+      "distribution": "internal",
+      "environment": "preview",
+      "env": { "EXPO_PUBLIC_ROOST_URL": "https://roost.playchrona.app" }
+    },
+    "production": {
+      "extends": "base",
+      "environment": "production",
+      "autoIncrement": true,
+      "env": { "EXPO_PUBLIC_ROOST_URL": "https://roost.playchrona.app" }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

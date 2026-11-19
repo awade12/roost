@@ -10,6 +10,8 @@ Rules: see "Changelog" in `SPEC.md`.
 ## [Unreleased]
 
 ### Added
+- **mobile** Roost on your phone (`apps/mobile`, Expo + NativeWind): sign in with your email code; a floating four-tab bar (Overview, Issues, Reports, Live ops); a game and environment switcher sheet; Account behind the avatar. Overview shows daily players with a 30-day chart against the 30 days before, new players, day-1 retention, events and what needs attention. Issues has open, resolved and ignored lists and a detail screen with the stack trace, breadcrumbs, and Resolve, Ignore and Reopen. Reports shows what players wrote, with screenshots and attachments, plus Close and Reopen. Live ops covers AI spend against the cap with a month-end projection, spend by template and limits; flag switches; a live event stream; and player lookup with a crash and report timeline. Run it with `pnpm --filter @roost/mobile ios`.
+- **api** `/admin` accepts the session as `Authorization: Bearer <token>` as well as the cookie, and `POST /admin/auth/otp/verify` with `client: "app"` returns `{ token, expiresAt }` instead of setting a cookie, for the mobile app. Sign-out revokes either kind. Requests with a bearer token skip the CSRF check, which only protects cookies.
 - **dashboard** The AI page has a Costs switch, Rounded or Exact: Exact shows every cost on the page (monthly spend and each template) down to a millionth of a dollar, since most calls cost a fraction of a cent. Remembered in this browser.
 - **api** AI decisions: `POST /v1/ai/decide {decision, state, playerId}` runs a decision template (OpenRouter's Decisions API, e.g. `liquid/d1.2`) by name and returns typed answers: `noul` (yes probability), `choice` (pick, confidence, probabilities) and `score` (score, confidence, probabilities, legend). Client keys allowed; the same per-player and per-game AI limits apply, and every call is logged under the decision's name so spend caps and usage count it. Decision models don't work through `/v1/ai/run`. Additive.
 - **api** Config as code: `decisions` in `roost.config.json` (model plus up to 20 questions), pushed and pruned like templates (`kind: "decision"` in the changes, `dry_run` honoured, versions bump only on a real change) and returned by `GET /v1/manage/config`, so `roost pull` writes them back.
@@ -110,6 +112,7 @@ Rules: see "Changelog" in `SPEC.md`.
 - **api** The `/v1` rate limit is now per key and set per game (default 120 a minute, as before) instead of fixed. Key lookups are cached for 30 seconds; revoking a key still takes effect at once on the same server.
 
 ### Fixed
+- **api** Errors thrown by Hono's own middleware (such as the CSRF check) now return their real 4xx status in the usual `{ "error": … }` shape instead of a 500.
 - **dashboard** The Expo setup guide (`ROOST.md`) made the player id with `crypto.randomUUID()`, which Hermes doesn't have; it now uses the SDK's `uuid()`. Guides also say to log Roost start-up errors in dev rather than swallow them, and give a `curl` check that tells a bad key or server apart from an app problem.
 - **dashboard** Segmented controls inside forms no longer submit the form when clicked.
 

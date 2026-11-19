@@ -17,11 +17,16 @@ export function clearSessionCookie(c: Context): void {
   deleteCookie(c, SESSION_COOKIE, { path: "/" });
 }
 
+/**
+ * The dashboard sends the session as a cookie; the mobile app, which has no
+ * cookie jar it controls, sends it as `Authorization: Bearer <token>`.
+ */
 export function sessionToken(c: Context): string | undefined {
-  return getCookie(c, SESSION_COOKIE);
+  const bearer = /^Bearer (\S+)$/.exec(c.req.header("authorization") ?? "")?.[1];
+  return bearer ?? getCookie(c, SESSION_COOKIE);
 }
 
-/** Rejects the request unless it carries a live session cookie; exposes `userId`. */
+/** Rejects the request unless it carries a live session (cookie or bearer); exposes `userId`. */
 export function requireSession(db: Db): MiddlewareHandler<{ Variables: SessionVars }> {
   return async (c, next) => {
     const token = sessionToken(c);

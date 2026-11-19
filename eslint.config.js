@@ -5,7 +5,7 @@ import tseslint from "typescript-eslint";
 const tsFiles = ["**/*.ts", "**/*.tsx"];
 
 export default tseslint.config(
-  { ignores: ["**/dist/**", "**/node_modules/**", "**/migrations/**", "sdks/**", "**/.turbo/**"] },
+  { ignores: ["**/dist/**", "**/node_modules/**", "**/migrations/**", "sdks/**", "**/.turbo/**", "apps/mobile/.expo/**", "apps/mobile/ios/**", "apps/mobile/android/**", "**/expo-env.d.ts"] },
   js.configs.recommended,
   ...tseslint.configs.strict.map((c) => ({ ...c, files: tsFiles })),
   {
@@ -30,14 +30,19 @@ export default tseslint.config(
     },
   },
   {
-    files: ["apps/dashboard/**/*.tsx", "apps/dashboard/**/*.ts"],
+    files: ["apps/dashboard/**/*.tsx", "apps/dashboard/**/*.ts", "apps/mobile/**/*.tsx", "apps/mobile/**/*.ts"],
     plugins: { "react-hooks": reactHooks },
     rules: { "react-hooks/rules-of-hooks": "error", "react-hooks/exhaustive-deps": "warn" },
   },
   {
-    // Tools that require a default export.
-    files: ["**/*.config.ts", "**/*.config.js", "eslint.config.js"],
+    // Tools that require a default export; Expo Router reads each route file's default export.
+    files: ["**/*.config.ts", "**/*.config.js", "eslint.config.js", "apps/mobile/src/app/**"],
     rules: { "no-restricted-syntax": "off" },
+  },
+  {
+    // Metro, Babel and Tailwind load these as CommonJS.
+    files: ["apps/mobile/*.config.js"],
+    languageOptions: { sourceType: "commonjs", globals: { module: "writable", require: "readonly", __dirname: "readonly" } },
   },
   {
     // Worker logs JSON lines to stdout until it gets pino; scripts print results.
